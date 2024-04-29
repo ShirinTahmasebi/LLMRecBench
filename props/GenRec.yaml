@@ -1,0 +1,11 @@
+# OpenAI API
+api_name: 'llama-2-7b-chat'
+max_tokens: 512
+api_batch: 8
+temperature: 0.2
+async_dispatch: True
+boots: 0
+# Others
+max_history_len: 50
+number_of_candidates: 20
+ground_truth_position: -1

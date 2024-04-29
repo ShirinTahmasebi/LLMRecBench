@@ -1,0 +1,4 @@
+load_col:
+    inter: [user_id, item_id, timestamp]
+
+data_path: '/cephyr/users/shirinta/Alvis/Projects/LLMRecBench/dataset'

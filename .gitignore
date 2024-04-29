@@ -1,0 +1,23 @@
+
+/data
+/checkpoints
+/.ipynb_checkpoints/
+**/__pycache__
+
+
+/.env.development
+/.recbench_env
+/trace.log
+/log
+/log_tensorboard
+
+# Numerous always-ignore extensions
+*.diff
+*.err
+*.orig
+*.log
+*.rej
+*.swo
+*.swp
+*.vi
+*.out
