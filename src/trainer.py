@@ -1,7 +1,8 @@
 from recbole.trainer import Trainer
 from tqdm import tqdm
 from recbole.utils import set_color
-from utils import recbole_get_item_text, last_non_zero_index, merge_dicts_with_matching_keys
+from helpers.utils_recbole import recbole_get_item_text
+from helpers.utils_general import last_non_zero_index, merge_dicts_with_matching_keys
 import pandas as pd
 
 class LLMBasedTrainer(Trainer):

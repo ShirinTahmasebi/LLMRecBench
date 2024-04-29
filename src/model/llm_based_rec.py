@@ -1,7 +1,8 @@
 from recbole.model.abstract_recommender import SequentialRecommender
 from recbole.data.interaction import Interaction as RecBoleInteraction
+from model.user_interaction import UserInteraction
 import torch
-from utils import recbole_get_item_text
+from helpers.utils_recbole import recbole_get_item_text
 from abc import ABC, abstractmethod
 
 class LLMBasedRec(ABC, SequentialRecommender):
@@ -52,6 +53,7 @@ class LLMBasedRec(ABC, SequentialRecommender):
 
 
     def remove_hallucination(self, recommended_items_batch: list):
+        # TODO: Check hallucination
         return recommended_items_batch
         
     def evaluate_score(self, recommended_items_batch: list, gt_names_batch: list):
@@ -90,7 +92,17 @@ class LLMBasedRec(ABC, SequentialRecommender):
         
         
     def full_sort_predict(self, interaction: RecBoleInteraction):
-        model_input_txt_batch, interactions_txt_batch, gt_ids_batch, gt_names_batch = self.format_input(interaction)
+        users_interactions_list = UserInteraction.build(
+            interaction=interaction,
+            item_token2id=self.item_token2id,
+            item_text=self.item_text,
+            item_year=self.item_year,
+        )
+        
+        user_ids_batch = UserInteraction.get_user_ids(users_interactions_list)
+        gt_names_batch = UserInteraction.get_gt_titles(users_interactions_list)
+        
+        model_input_txt_batch, interactions_txt_batch = self.format_input(users_interactions_list)
         model_output_txt_batch = self.call_llm(model_input_txt_batch)
         
         recommended_items_batch: list = self.process_output(model_output_txt_batch)        
@@ -102,6 +114,7 @@ class LLMBasedRec(ABC, SequentialRecommender):
             self.evaluate_score(no_hallu_recommended_items_batch, gt_names_batch)
         
         return {
+            "user_id": user_ids_batch,
             "interaction_history": interactions_txt_batch,
             "recommended_items": recommended_items_batch,
             "hit@5": hit5_batch,

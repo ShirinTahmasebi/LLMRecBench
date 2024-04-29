@@ -1,7 +1,9 @@
-from trainer_new import LLMBasedTrainer
+from trainer import LLMBasedTrainer
 from recbole.data import data_preparation
 from recbole.data.dataset.sequential_dataset import SequentialDataset
-from utils import get_model, get_absolute_path, ModelConfig, LLAMA_PROMPT_FORMAT
+from helpers.utils_general import get_absolute_path, ModelConfig
+from helpers.utils_recbole import get_model
+from prompts.prompts_general import LLAMA_PROMPT_FORMAT
 
 
 def create_config(model_class, dataset_name, props):

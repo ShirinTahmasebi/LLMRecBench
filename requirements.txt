@@ -18,10 +18,6 @@ texttable>=0.9.0
 psutil>=5.9.0
 kmeans-pytorch
 ##
-## LLMRank
-pylcs
-replicate
-##
 ## LLMs
 openai
 tiktoken
@@ -30,14 +26,7 @@ bitsandbytes
 datasets
 accelerate
 ##
-## RAG
-cohere 
-weaviate-client==3.*
-langchain
-# weaviate-client
-chromadb
-##
-##
+## General
 pandas
 numpy
 python-dotenv
