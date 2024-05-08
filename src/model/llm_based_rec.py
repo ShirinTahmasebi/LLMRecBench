@@ -3,19 +3,22 @@ from recbole.data.interaction import Interaction as RecBoleInteraction
 from model.user_interaction import UserInteraction
 import torch
 from helpers.utils_recbole import recbole_get_item_text
+from helpers.utils_general import log
 from abc import ABC, abstractmethod
 
 class LLMBasedRec(ABC, SequentialRecommender):
     
-    def __init__(self, config, dataset, model_config):
+    def __init__(self, config, dataset, model_config, load_from_checkpoint):
         super().__init__(config, dataset)
         self.initialize_variables(config, dataset, model_config)
-        self.model, self.tokenizer = self.initialize_model_tokenizer()
+        self.model, self.tokenizer = self.initialize_model_tokenizer(load_from_checkpoint)
         self.fake_fn = torch.nn.Linear(1, 1)
+        if self.model:
+            log("Model and tokenizer are loaded!")
         
     
     @abstractmethod
-    def initialize_model_tokenizer(self):
+    def initialize_model_tokenizer(self, load_from_checkpoint):
         raise NotImplementedError(f"The model initialization method is not implemented for {self.__class__.__name__}.")
     
     @abstractmethod
@@ -50,6 +53,7 @@ class LLMBasedRec(ABC, SequentialRecommender):
         )
         self.model_config = model_config
         self.item_num = dataset.item_num
+        self.number_of_recommendations = config['number_of_recommendations']
 
 
     def remove_hallucination(self, recommended_items_batch: list):
@@ -116,6 +120,7 @@ class LLMBasedRec(ABC, SequentialRecommender):
         return {
             "user_id": user_ids_batch,
             "interaction_history": interactions_txt_batch,
+            "ground_truth": gt_names_batch,
             "recommended_items": recommended_items_batch,
             "hit@5": hit5_batch,
             "hit@10": hit10_batch, 

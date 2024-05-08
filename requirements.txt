@@ -25,6 +25,7 @@ transformers==4.34.1
 bitsandbytes
 datasets
 accelerate
+peft
 ##
 ## General
 pandas

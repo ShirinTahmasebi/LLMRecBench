@@ -1,8 +1,8 @@
 from recbole.data.interaction import Interaction as RecBoleInteraction
-from helpers.utils_general import last_non_zero_index
 import dataclasses 
 import datetime
 from typing import List
+from helpers.utils_general import reshape_tensor_remove_zero_from_end
 
 
 @dataclasses.dataclass
@@ -34,8 +34,8 @@ class UserInteraction:
         user_interaction_list = []
         
         for i in range(len(interaction)):
-            user_id = interaction[i]['user_id']
-            his_item_ids = interaction[i]['item_id_list']
+            user_id = interaction[i]['user_id'].item()
+            his_item_ids = reshape_tensor_remove_zero_from_end(interaction[i]['item_id_list'])
             timestamp_list = interaction[i]['timestamp_list']
             gt_id =  item_token2id[interaction[i]['item_id']]
             gt_title = item_text[interaction[i]['item_id']]

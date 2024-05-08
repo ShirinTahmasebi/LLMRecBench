@@ -1,22 +1,34 @@
 from model.llm_based_rec import LLMBasedRec
-from helpers.utils_llm import import_hf_model_and_tokenizer
-from helpers.utils_general import last_non_zero_index
+from helpers.utils_llm import import_hf_model_and_tokenizer, import_genrec_model_and_tokenizer
+from helpers.utils_general import last_non_zero_index, log, get_absolute_path
 from model.user_interaction import UserInteraction
 from typing import List
+from prompts.prompts_genrec import *
 
 
 class GenRec(LLMBasedRec):
     
-    def __init__(self, config, dataset, model_config):
-        super().__init__(config, dataset, model_config)
+    def __init__(self, config, dataset, model_config, load_from_checkpoint=True):
         self.number_of_history_items = 10
+        self.lora_weights_path = config['lora_weights_path']
+        self.checkpoint_model_name = config['checkpoint_model_name']
+        super().__init__(config, dataset, model_config, load_from_checkpoint)
 
  
-    def initialize_model_tokenizer(self):
-        return import_hf_model_and_tokenizer(
-            model_name=self.model_config.id, 
-            access_token=self.model_config.api_key    
-        )
+    def initialize_model_tokenizer(self, load_from_checkpoint):
+        if load_from_checkpoint:
+            model, tokenizer = import_genrec_model_and_tokenizer(
+                model_name=self.checkpoint_model_name, 
+                access_token=self.model_config.api_key,
+                lora_weights=get_absolute_path(self.lora_weights_path)
+            )
+        else:
+            model, tokenizer = import_hf_model_and_tokenizer(
+                model_name=self.model_config.id, 
+                access_token=self.model_config.api_key
+            )        
+        
+        return model, tokenizer
 
     
     def get_model_name(self):
@@ -24,11 +36,8 @@ class GenRec(LLMBasedRec):
     
     
     def create_prompt(self, input):
-        instruction_txt = """Instruction: Given the movie viewing habits, what is the most probable movie they will choose to watch next?"""
-        input_txt = f"""Input: {input}"""
-        output_txt = "Output:"
-        
-        return f"""{instruction_txt} \n\n {input_txt} \n\n {output_txt}"""
+        formatted_interactions = MOVIE_INTERACTIONS.format(input=input)
+        return f"""{MOVIE_INSTRUCTION} \n\n {formatted_interactions} \n\n {MOVIE_OUTPUT}"""
 
 
     def format_input(self, interactions_list: List[UserInteraction]):
@@ -69,9 +78,12 @@ class GenRec(LLMBasedRec):
                 result.detach().cpu().numpy(), 
                 skip_special_tokens=True
             )[0]
+            
+            log(f"RESULT: {text_result} \n\n")
 
-            all_results.append(text_result.split("Output: ")[1])
+            all_results.append(text_result.split(MOVIE_OUTPUT)[1])
         
+        log("\n".join(all_results))
         return all_results
 
         

@@ -1,7 +1,7 @@
 from trainer import LLMBasedTrainer
 from recbole.data import data_preparation
 from recbole.data.dataset.sequential_dataset import SequentialDataset
-from helpers.utils_general import get_absolute_path, ModelConfig
+from helpers.utils_general import get_absolute_path, ModelConfig, log
 from helpers.utils_recbole import get_model
 from prompts.prompts_general import LLAMA_PROMPT_FORMAT
 
@@ -31,7 +31,7 @@ LLAMA2_CONFIG = ModelConfig(
 
 model_name = "GenRec"
 dataset_name = 'ml-1m'
-props_dir = "/cephyr/users/shirinta/Alvis/Projects/LLMRecBench/props"
+props_dir = get_absolute_path("props")
 props = [
     f'{props_dir}/{model_name}.yaml', 
     f'{props_dir}/{dataset_name}.yaml', 
@@ -46,6 +46,8 @@ config = create_config(model_class, dataset_name, props)
 dataset = SequentialDataset(config)
 
 train_data, valid_data, test_data = data_preparation(config, dataset)
-model = model_class(config, dataset, LLAMA2_CONFIG).to(config['device'])
+model = model_class(config, dataset, LLAMA2_CONFIG, load_from_checkpoint=True).to(config['device'])
 trainer = LLMBasedTrainer(config, model, dataset)
 test_result = trainer.evaluate(test_data, load_best_model=False, show_progress=config['show_progress'])
+
+log("Done!")

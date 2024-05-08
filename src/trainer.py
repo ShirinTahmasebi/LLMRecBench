@@ -50,61 +50,6 @@ class LLMBasedTrainer(Trainer):
             df.to_csv(f"{self.dataset_name}_{self.model.get_model_name()}.csv", index=False)
             counter += len(interaction)
             
+            # TODO: Remove this line if it is not in the debugging mode
             if counter > 10:
                 break
-               
-                    
-    def print_interactions(self, eval_data, show_progress=False):
-        from datetime import datetime
-        
-        iter_data = (
-            tqdm(
-                eval_data,
-                total=len(eval_data),
-                ncols=100,
-                desc=set_color(f"Evaluate   ", "pink"),
-            )
-            if show_progress
-            else eval_data
-        )
-        
-        
-        for _, batched_data in enumerate(iter_data):
-            interaction, _, _, _ = batched_data
-            
-            for i in range(len(interaction)):
-                user_id = interaction[i]['user_id']
-                his_item_ids = interaction[i]['item_id_list']
-                timestamp_list = interaction[i]['timestamp_list']
-                gt_id =  self.item_token2id[interaction[i]['item_id']]
-                gt_timestamp = interaction[i]['timestamp']
-                gt_title = self.item_text[interaction[i]['item_id']]
-                
-                history_ids = []
-                history_titles = []
-                history_timestampts = []
-                his_items_count = last_non_zero_index(his_item_ids) + 1
-                start_index = his_items_count - 10 # Prints the last 10 history items
-                end_index = his_items_count   
-                            
-                for j, idx in enumerate(his_item_ids[start_index:end_index]):
-                    movie_id = self.item_token2id[idx]
-                    movie_title = self.item_text[idx]
-                    movie_year = self.item_year[idx]
-                    timestamp = timestamp_list[j]
-                    
-                    history_ids.append(movie_id)
-                    history_titles.append(movie_title)
-                    history_timestampts.append(str(datetime.fromtimestamp(timestamp.item())))
-                
-                user_output = f"""
-                    User: {user_id} \n
-                    GT ID: {gt_id} \n
-                    GT Title: {gt_title} \n
-                    GT Time: {datetime.fromtimestamp(gt_timestamp.item())} \n
-                    History IDs:  {", ".join(history_ids)} \n
-                    History Titles:  {", ".join(history_titles)} \n
-                    History Time:  {", ".join(history_timestampts)} \n
-                    ---------------------------------
-                    """
-                print(user_output)

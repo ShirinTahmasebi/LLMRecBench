@@ -63,3 +63,18 @@ def merge_dicts_with_non_matching_keys(dict1, dict2):
         if key not in dict1:
             merged_dict[key] = dict2[key]
     return merged_dict
+
+
+def log(text, in_debug_mode: bool = True):
+    if in_debug_mode:
+        print(f"{text}")
+    
+
+def reshape_tensor_remove_zero_from_end(tensor):
+    import numpy as np
+    arr = np.array(tensor)
+    zero_index = np.argmax(arr == 0)
+    if zero_index > 0:
+        sliced_array = tensor[:zero_index]
+        return sliced_array
+    return tensor
