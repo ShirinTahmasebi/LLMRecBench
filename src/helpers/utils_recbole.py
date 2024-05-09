@@ -13,17 +13,8 @@ def get_model(model_name):
         return recbole_get_model(model_name)
     
 
-# TODO: This function should also be revised I guess!
-def recbole_get_item_text(data_path: str, dataset_name: str, item_token2id: list) -> DataTokensPool:
+def recbole_get_item_text(data_path: str, dataset_name: str, item_token2id: list, token_pool_type) -> DataTokensPool:
     import os.path as osp
-    feat_path = osp.join(data_path, f'{dataset_name}.item')
-    
-    if dataset_name in ['ml-1m', 'ml-1m-full']:
-        from data.item_tokens import DataTokensPoolMovieLens as ItemTokens
-    elif dataset_name in ['Games', 'Games-6k']:
-        from data.item_tokens import DataTokensPoolAmazon as ItemTokens
-    else:
-        raise NotImplementedError()
-    
-    return ItemTokens(feat_path=feat_path, item_token2id=item_token2id)
+    feat_path = osp.join(data_path, f'{dataset_name}.item')    
+    return token_pool_type(feat_path=feat_path, item_token2id=item_token2id)
   

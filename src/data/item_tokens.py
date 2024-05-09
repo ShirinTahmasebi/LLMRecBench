@@ -1,6 +1,6 @@
+import dataclasses 
 from abc import ABC, abstractmethod
 from helpers.annotations import singleton
-import dataclasses 
 
 @dataclasses.dataclass
 class DataTokensPool(ABC):

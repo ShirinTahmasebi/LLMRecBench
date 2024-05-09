@@ -1,15 +1,20 @@
+import torch
+from abc import ABC, abstractmethod
+from typing import Generic, TypeVar, Type
 from recbole.model.abstract_recommender import SequentialRecommender
 from recbole.data.interaction import Interaction as RecBoleInteraction
 from data.user_interaction import UserInteractionHistory
-import torch
+from data.item_tokens import DataTokensPool
 from helpers.utils_recbole import recbole_get_item_text
 from helpers.utils_general import log
-from abc import ABC, abstractmethod
 
-class LLMBasedRec(ABC, SequentialRecommender):
+
+T = TypeVar('T')
+class LLMBasedRec(ABC, SequentialRecommender, Generic[T]):
     
-    def __init__(self, config, dataset, model_config, load_from_checkpoint):
+    def __init__(self, config, dataset, model_config, load_from_checkpoint, cls: Type[T]):
         super().__init__(config, dataset)
+        self.dataset_type_cls = cls
         self.initialize_variables(config, dataset, model_config)
         self.model, self.tokenizer = self.initialize_model_tokenizer(load_from_checkpoint)
         self.fake_fn = torch.nn.Linear(1, 1)
@@ -45,11 +50,13 @@ class LLMBasedRec(ABC, SequentialRecommender):
         self.item_token2id = list(dataset.field2token_id['item_id'].keys())
         self.data_path = config['data_path']
         self.dataset_name = dataset.dataset_name
-        self.interaction_item_tokens: RecBoleItemTokens = recbole_get_item_text(
+        data_tokens_pool: DataTokensPool = recbole_get_item_text(
             data_path=self.data_path,
             dataset_name=self.dataset_name,
-            item_token2id=self.item_token2id
+            item_token2id=self.item_token2id,
+            token_pool_type=self.dataset_type_cls.get_data_tokens_pool_type()
         )
+        self.dataset = self.dataset_type_cls(data_tokens_pool)
         self.model_config = model_config
         self.item_num = dataset.item_num
         self.number_of_recommendations = config['number_of_recommendations']
@@ -97,7 +104,8 @@ class LLMBasedRec(ABC, SequentialRecommender):
     def full_sort_predict(self, interaction: RecBoleInteraction):
         users_interactions_list = UserInteractionHistory.build(
             interaction=interaction,
-            tokens=self.interaction_item_tokens
+            tokens=self.dataset.get_token_pools(), 
+            data_item_type=self.dataset_type_cls.get_data_item_type()
         )
         
         user_ids_batch = UserInteractionHistory.get_user_ids(users_interactions_list)

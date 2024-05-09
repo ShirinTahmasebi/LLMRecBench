@@ -1,7 +1,9 @@
 def singleton(cls):
-    instances = {}
+    instance = None
     def get_instance(*args, **kwargs):
-        if cls not in instances:
-            instances[cls] = cls(*args, **kwargs)
-        return instances[cls]
-    return get_instance
+        nonlocal instance
+        if instance is None:
+            instance = cls(*args, **kwargs)
+        return instance
+    cls.get_instance = staticmethod(get_instance)
+    return cls

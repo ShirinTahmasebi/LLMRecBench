@@ -1,19 +1,19 @@
+from typing import List, TypeVar, Type
+from prompts.prompts_genrec import *
 from model.llm_based_rec import LLMBasedRec
+from data.user_interaction import UserInteractionHistory
 from helpers.utils_llm import import_hf_model_and_tokenizer, import_genrec_model_and_tokenizer
 from helpers.utils_general import last_non_zero_index, log, get_absolute_path
-from data.user_interaction import UserInteractionHistory, RecBoleItemMovieLens
-from typing import List
-from prompts.prompts_genrec import *
 
-
-class GenRec(LLMBasedRec):
+T = TypeVar('T')
+class GenRec(LLMBasedRec[T]):
     
-    def __init__(self, config, dataset, model_config, load_from_checkpoint=True):
+    def __init__(self, config, dataset, model_config, load_from_checkpoint=True, cls: Type[T]= None):
         self.number_of_history_items = 10
         self.lora_weights_path = config['lora_weights_path']
         # TODO: Checkpoint path should be in config file. But, the checkpoint name should be chosen by the dataset type.
         self.checkpoint_model_name = config['checkpoint_model_name']
-        super().__init__(config, dataset, model_config, load_from_checkpoint)
+        super().__init__(config, dataset, model_config, load_from_checkpoint, cls)
 
  
     def initialize_model_tokenizer(self, load_from_checkpoint):
@@ -37,6 +37,7 @@ class GenRec(LLMBasedRec):
     
     
     def create_prompt(self, input):
+        # TODO: There is no way here to prevent mannual type checking
         formatted_interactions = MOVIE_INTERACTIONS.format(input=input)
         return f"""{MOVIE_INSTRUCTION} \n\n {formatted_interactions} \n\n {MOVIE_OUTPUT}"""
 
@@ -45,19 +46,17 @@ class GenRec(LLMBasedRec):
         interactions_prompt_txt_batch = []
         interactions_txt_batch = []
         
-        # TODO: Can the type be generic so that the boilerplate code be removed?
         for history_per_user in user_history_batch:
-            if type(history_per_user.ground_truth_item) is RecBoleItemMovieLens:
-                his_items_count = last_non_zero_index(RecBoleItemMovieLens.get_item_ids(history_per_user.interaction_items)) + 1
-                start_index = his_items_count - self.number_of_history_items
-                end_index = his_items_count 
-                
-                zipped_list = zip(
-                    RecBoleItemMovieLens.get_item_titles(history_per_user.interaction_items)[start_index:end_index],
-                    RecBoleItemMovieLens.get_item_years(history_per_user.interaction_items)[start_index:end_index]
-                )
-                
-                output_interaction = [f"{title} ({year})" for title, year in zipped_list]
+            data_item_cls = self.dataset.get_data_item_type()
+            his_items_count = last_non_zero_index(data_item_cls.get_item_ids(history_per_user.interaction_items)) + 1
+            start_index = his_items_count - self.number_of_history_items
+            end_index = his_items_count 
+            output_interaction = data_item_cls.get_interactions_text(
+                history_per_user.interaction_items,
+                start_index,
+                end_index
+            )
+                    
             interactions_prompt_txt_batch.append(self.create_prompt(", ".join(output_interaction)))    
             interactions_txt_batch.append(", ".join(output_interaction))
                 

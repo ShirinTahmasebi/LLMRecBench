@@ -4,7 +4,9 @@ from recbole.data.dataset.sequential_dataset import SequentialDataset
 from helpers.utils_general import get_absolute_path, ModelConfig, log
 from helpers.utils_recbole import get_model
 from prompts.prompts_general import LLAMA_PROMPT_FORMAT
-from data.user_interaction import DatasetNameEnum, RecBoleItemTypeEnum
+from data.dataset_enum import DatasetNameEnum
+from data.dataset import DatasetMovieLens
+
 
 def create_config(model_class, dataset_name, props):
     from recbole.config import Config
@@ -30,14 +32,8 @@ LLAMA2_CONFIG = ModelConfig(
 
 
 model_name = "GenRec"
-
-# Choose the dataset name from here: 
-# recbole/properties/dataset/url.yaml
-
-dataset_type = 'MOVIE_LENS'
-
-dataset_name = DatasetNameEnum.get_dataset_name(dataset_type)
-# dataset_interaction_type = RecBoleItemTypeEnum.get_class_by_name(dataset_type)
+model_class = get_model(model_name)
+dataset_name = DatasetNameEnum.get_dataset_name('MOVIE_LENS')
 
 props_dir = get_absolute_path("props")
 props = [
@@ -46,16 +42,20 @@ props = [
     f'{props_dir}/openai_api.yaml', 
     f'{props_dir}/overall.yaml'
 ]
-print(props)
 
-model_class = get_model(model_name)
 config = create_config(model_class, dataset_name, props)
+recbole_dataset = SequentialDataset(config)
+train_data, valid_data, test_data = data_preparation(config, recbole_dataset)
 
-dataset = SequentialDataset(config)
+model = model_class(
+    config, 
+    recbole_dataset, 
+    LLAMA2_CONFIG, 
+    load_from_checkpoint=True, 
+    cls=DatasetMovieLens
+).to(config['device'])
 
-train_data, valid_data, test_data = data_preparation(config, dataset)
-model = model_class(config, dataset, LLAMA2_CONFIG, load_from_checkpoint=True).to(config['device'])
-trainer = LLMBasedTrainer(config, model, dataset)
+trainer = LLMBasedTrainer(config, model, recbole_dataset)
 test_result = trainer.evaluate(test_data, load_best_model=False, show_progress=config['show_progress'])
 
 log("Done!")
