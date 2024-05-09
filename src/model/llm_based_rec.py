@@ -1,8 +1,8 @@
 from recbole.model.abstract_recommender import SequentialRecommender
 from recbole.data.interaction import Interaction as RecBoleInteraction
-from model.user_interaction import UserInteractionHistory
+from data.user_interaction import UserInteractionHistory
 import torch
-from helpers.utils_recbole import recbole_get_item_text, RecBoleItemTokens
+from helpers.utils_recbole import recbole_get_item_text
 from helpers.utils_general import log
 from abc import ABC, abstractmethod
 

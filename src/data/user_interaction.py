@@ -3,7 +3,7 @@ import dataclasses
 import datetime
 from typing import TypeVar, Generic, List
 from helpers.utils_general import reshape_tensor_remove_zero_from_end
-from helpers.utils_recbole import RecBoleItemTokens, RecBoleItemTokensMovieLens, RecBoleItemTokensAmazon
+from data.item_tokens import DataTokensPool, DataTokensPoolMovieLens, DataTokensPoolAmazon
 from enum import Enum
 
         
@@ -92,7 +92,7 @@ class UserInteractionHistory: #(Generic[T]):
         return list(map(lambda obj: obj.ground_truth_item.item_title, interactions_list))
 
     @classmethod
-    def build(cls, interaction: RecBoleInteraction, tokens: RecBoleItemTokens):
+    def build(cls, interaction: RecBoleInteraction, tokens: DataTokensPool):
         user_interaction_list = []
         
         for i in range(len(interaction)):
@@ -100,19 +100,19 @@ class UserInteractionHistory: #(Generic[T]):
             his_item_ids = reshape_tensor_remove_zero_from_end(interaction[i]['item_id_list'])
             timestamp_list = interaction[i]['timestamp_list']
             
-            if type(tokens) is type(RecBoleItemTokensMovieLens()):
+            if type(tokens) is type(DataTokensPoolMovieLens()):
                 ground_truth = RecBoleItemMovieLens.build_ground_truth(tokens, interaction, i)
-            elif type(tokens) is type(RecBoleItemTokensAmazon()):
+            elif type(tokens) is type(DataTokensPoolAmazon()):
                 # TODO: Fill this!
                 pass
             
             interaction_items = []
                          
             for j, idx in enumerate(his_item_ids):
-                if type(tokens) is type(RecBoleItemTokensMovieLens()):
+                if type(tokens) is type(DataTokensPoolMovieLens()):
                     interaction_item = RecBoleItemMovieLens.build_interaction(tokens, timestamp_list, idx, j)
                     interaction_items.append(interaction_item)
-                elif type(tokens) is type(RecBoleItemTokensAmazon()):
+                elif type(tokens) is type(DataTokensPoolAmazon()):
                     pass
 
             

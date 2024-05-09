@@ -4,7 +4,7 @@ from recbole.data.dataset.sequential_dataset import SequentialDataset
 from helpers.utils_general import get_absolute_path, ModelConfig, log
 from helpers.utils_recbole import get_model
 from prompts.prompts_general import LLAMA_PROMPT_FORMAT
-from model.user_interaction import DatasetNameEnum, RecBoleItemTypeEnum
+from data.user_interaction import DatasetNameEnum, RecBoleItemTypeEnum
 
 def create_config(model_class, dataset_name, props):
     from recbole.config import Config

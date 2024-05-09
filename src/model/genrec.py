@@ -1,7 +1,7 @@
 from model.llm_based_rec import LLMBasedRec
 from helpers.utils_llm import import_hf_model_and_tokenizer, import_genrec_model_and_tokenizer
 from helpers.utils_general import last_non_zero_index, log, get_absolute_path
-from model.user_interaction import UserInteractionHistory, RecBoleItemMovieLens
+from data.user_interaction import UserInteractionHistory, RecBoleItemMovieLens
 from typing import List
 from prompts.prompts_genrec import *
 
@@ -11,6 +11,7 @@ class GenRec(LLMBasedRec):
     def __init__(self, config, dataset, model_config, load_from_checkpoint=True):
         self.number_of_history_items = 10
         self.lora_weights_path = config['lora_weights_path']
+        # TODO: Checkpoint path should be in config file. But, the checkpoint name should be chosen by the dataset type.
         self.checkpoint_model_name = config['checkpoint_model_name']
         super().__init__(config, dataset, model_config, load_from_checkpoint)
 
