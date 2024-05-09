@@ -4,7 +4,7 @@ from recbole.data.dataset.sequential_dataset import SequentialDataset
 from helpers.utils_general import get_absolute_path, ModelConfig, log
 from helpers.utils_recbole import get_model
 from prompts.prompts_general import LLAMA_PROMPT_FORMAT
-
+from model.user_interaction import DatasetNameEnum, RecBoleItemTypeEnum
 
 def create_config(model_class, dataset_name, props):
     from recbole.config import Config
@@ -30,7 +30,15 @@ LLAMA2_CONFIG = ModelConfig(
 
 
 model_name = "GenRec"
-dataset_name = 'ml-1m'
+
+# Choose the dataset name from here: 
+# recbole/properties/dataset/url.yaml
+
+dataset_type = 'MOVIE_LENS'
+
+dataset_name = DatasetNameEnum.get_dataset_name(dataset_type)
+# dataset_interaction_type = RecBoleItemTypeEnum.get_class_by_name(dataset_type)
+
 props_dir = get_absolute_path("props")
 props = [
     f'{props_dir}/{model_name}.yaml', 

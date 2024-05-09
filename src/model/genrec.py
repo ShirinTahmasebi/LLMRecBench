@@ -1,7 +1,7 @@
 from model.llm_based_rec import LLMBasedRec
 from helpers.utils_llm import import_hf_model_and_tokenizer, import_genrec_model_and_tokenizer
 from helpers.utils_general import last_non_zero_index, log, get_absolute_path
-from model.user_interaction import UserInteraction
+from model.user_interaction import UserInteractionHistory, RecBoleItemMovieLens
 from typing import List
 from prompts.prompts_genrec import *
 
@@ -40,21 +40,23 @@ class GenRec(LLMBasedRec):
         return f"""{MOVIE_INSTRUCTION} \n\n {formatted_interactions} \n\n {MOVIE_OUTPUT}"""
 
 
-    def format_input(self, interactions_list: List[UserInteraction]):
+    def format_input(self, user_history_batch: List[UserInteractionHistory]):
         interactions_prompt_txt_batch = []
         interactions_txt_batch = []
         
-        for interaction in interactions_list:
-            his_items_count = last_non_zero_index(interaction.history_ids) + 1
-            start_index = his_items_count - self.number_of_history_items
-            end_index = his_items_count 
-            
-            zipped_list = zip(
-                interaction.history_titles[start_index:end_index], 
-                interaction.history_years[start_index:end_index]
-            )
-            
-            output_interaction = [f"{title} ({year})" for title, year in zipped_list]
+        # TODO: Can the type be generic so that the boilerplate code be removed?
+        for history_per_user in user_history_batch:
+            if type(history_per_user.ground_truth_item) is RecBoleItemMovieLens:
+                his_items_count = last_non_zero_index(RecBoleItemMovieLens.get_item_ids(history_per_user.interaction_items)) + 1
+                start_index = his_items_count - self.number_of_history_items
+                end_index = his_items_count 
+                
+                zipped_list = zip(
+                    RecBoleItemMovieLens.get_item_titles(history_per_user.interaction_items)[start_index:end_index],
+                    RecBoleItemMovieLens.get_item_years(history_per_user.interaction_items)[start_index:end_index]
+                )
+                
+                output_interaction = [f"{title} ({year})" for title, year in zipped_list]
             interactions_prompt_txt_batch.append(self.create_prompt(", ".join(output_interaction)))    
             interactions_txt_batch.append(", ".join(output_interaction))
                 

@@ -18,12 +18,12 @@ class LLMBasedTrainer(Trainer):
         self.data_path = config['data_path']
         self.dataset_name = dataset.dataset_name
         
-        # TODO: THis part is movielens specific. Revise it!
-        self.item_text, self.item_year, self.item_genre = recbole_get_item_text(
-            data_path=self.data_path,
-            dataset_name=self.dataset_name,
-            item_token2id=self.item_token2id
-        )
+        # # TODO: THis part is movielens specific. Revise it!
+        # self.item_text, self.item_year, self.item_genre = recbole_get_item_text(
+        #     data_path=self.data_path,
+        #     dataset_name=self.dataset_name,
+        #     item_token2id=self.item_token2id
+        # )
                   
       
     def evaluate(self, eval_data, load_best_model=True, model_file=None, show_progress=False):

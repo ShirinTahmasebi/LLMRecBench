@@ -1,8 +1,8 @@
 from recbole.model.abstract_recommender import SequentialRecommender
 from recbole.data.interaction import Interaction as RecBoleInteraction
-from model.user_interaction import UserInteraction
+from model.user_interaction import UserInteractionHistory
 import torch
-from helpers.utils_recbole import recbole_get_item_text
+from helpers.utils_recbole import recbole_get_item_text, RecBoleItemTokens
 from helpers.utils_general import log
 from abc import ABC, abstractmethod
 
@@ -45,8 +45,7 @@ class LLMBasedRec(ABC, SequentialRecommender):
         self.item_token2id = list(dataset.field2token_id['item_id'].keys())
         self.data_path = config['data_path']
         self.dataset_name = dataset.dataset_name
-        # TODO: THis part is movielens specific. Revise it!
-        self.item_text, self.item_year, self.item_genre = recbole_get_item_text(
+        self.interaction_item_tokens: RecBoleItemTokens = recbole_get_item_text(
             data_path=self.data_path,
             dataset_name=self.dataset_name,
             item_token2id=self.item_token2id
@@ -96,15 +95,13 @@ class LLMBasedRec(ABC, SequentialRecommender):
         
         
     def full_sort_predict(self, interaction: RecBoleInteraction):
-        users_interactions_list = UserInteraction.build(
+        users_interactions_list = UserInteractionHistory.build(
             interaction=interaction,
-            item_token2id=self.item_token2id,
-            item_text=self.item_text,
-            item_year=self.item_year,
+            tokens=self.interaction_item_tokens
         )
         
-        user_ids_batch = UserInteraction.get_user_ids(users_interactions_list)
-        gt_names_batch = UserInteraction.get_gt_titles(users_interactions_list)
+        user_ids_batch = UserInteractionHistory.get_user_ids(users_interactions_list)
+        gt_names_batch = UserInteractionHistory.get_gt_titles(users_interactions_list)
         
         model_input_txt_batch, interactions_txt_batch = self.format_input(users_interactions_list)
         model_output_txt_batch = self.call_llm(model_input_txt_batch)
