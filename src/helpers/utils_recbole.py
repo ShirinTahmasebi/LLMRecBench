@@ -13,8 +13,14 @@ def get_model(model_name):
         return recbole_get_model(model_name)
     
 
-def recbole_get_item_text(data_path: str, dataset_name: str, item_token2id: list, token_pool_type) -> DataTokensPool:
+def recbole_get_item_text(
+    data_path: str, 
+    dataset_name: str, 
+    user_token2id: list, 
+    item_token2id: list, 
+    token_pool_type
+) -> DataTokensPool:
     import os.path as osp
     feat_path = osp.join(data_path, f'{dataset_name}.item')    
-    return token_pool_type(feat_path=feat_path, item_token2id=item_token2id)
+    return token_pool_type(feat_path=feat_path, user_token2id=user_token2id, item_token2id=item_token2id)
   

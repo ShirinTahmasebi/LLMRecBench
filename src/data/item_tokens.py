@@ -4,6 +4,7 @@ from helpers.annotations import singleton
 
 @dataclasses.dataclass
 class DataTokensPool(ABC):
+    user_token2id: list
     item_token2id: list
     item_token2text: list
     
@@ -19,7 +20,7 @@ class DataTokensPoolMovieLens(DataTokensPool):
     item_token2genre: list
     
     # https://github.com/RUCAIBox/LLMRank/blob/b3999d8fdacc0ad1520d7b036b28589f0e7e6479/llmrank/utils.py
-    def __init__(self, feat_path: str, item_token2id: list):
+    def __init__(self, feat_path: str, user_token2id: list, item_token2id: list):
         token_text = {}
         token_release_year = {}
         token_genre = {}
@@ -47,7 +48,7 @@ class DataTokensPoolMovieLens(DataTokensPool):
             item_token2genre.append(token_genre[token])
             
   
-        super().__init__(item_token2id, item_token2text)
+        super().__init__(user_token2id, item_token2id, item_token2text)
         self.item_token2release_year = item_token2release_year
         self.item_token2genre = item_token2genre
 
@@ -56,14 +57,14 @@ class DataTokensPoolMovieLens(DataTokensPool):
 class DataTokensPoolAmazon(DataTokensPool):
         
     # https://github.com/RUCAIBox/LLMRank/blob/b3999d8fdacc0ad1520d7b036b28589f0e7e6479/llmrank/utils.py    
-    def __init__(self, feat_path: str, item_token2id: list):
+    def __init__(self, feat_path: str, user_token2id: list, item_token2id: list):
         token_text = {}
         item_token2text = ['[PAD]']
     
         with open(feat_path, 'r', encoding='utf-8') as file:
             file.readline()
             for line in file:
-                item_id, title = line.strip().split('\t')
+                item_id, title = line.strip().split('\t')[0:2]
                 token_text[item_id] = title
         
         for i, token in enumerate(item_token2id):
@@ -71,4 +72,4 @@ class DataTokensPoolAmazon(DataTokensPool):
             raw_text = token_text[token]
             item_token2text.append(raw_text)
             
-        super().__init__(item_token2id, item_token2text)
+        super().__init__(user_token2id, item_token2id, item_token2text)

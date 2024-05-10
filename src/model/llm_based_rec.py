@@ -47,19 +47,23 @@ class LLMBasedRec(ABC, SequentialRecommender, Generic[T]):
         raise NotImplementedError(f"The model name is not defined for {self.__class__.__name__}.")
     
     def initialize_variables(self, config, dataset, model_config):
-        self.item_token2id = list(dataset.field2token_id['item_id'].keys())
+        self.number_of_recommendations = config['number_of_recommendations']
         self.data_path = config['data_path']
         self.dataset_name = dataset.dataset_name
+        
+        item_token2id = list(dataset.field2token_id['item_id'].keys())
+        user_token2id = list(dataset.field2token_id['user_id'].keys())
         data_tokens_pool: DataTokensPool = recbole_get_item_text(
             data_path=self.data_path,
             dataset_name=self.dataset_name,
-            item_token2id=self.item_token2id,
+            user_token2id=user_token2id,
+            item_token2id=item_token2id,
             token_pool_type=self.dataset_type_cls.get_data_tokens_pool_type()
         )
+        
         self.dataset = self.dataset_type_cls(data_tokens_pool)
         self.model_config = model_config
         self.item_num = dataset.item_num
-        self.number_of_recommendations = config['number_of_recommendations']
 
 
     def remove_hallucination(self, recommended_items_batch: list):

@@ -2,6 +2,7 @@ from typing import List, TypeVar, Type
 from prompts.prompts_genrec import *
 from model.llm_based_rec import LLMBasedRec
 from data.user_interaction import UserInteractionHistory
+from data.dataset import DatasetMovieLens, DatasetAmazon
 from helpers.utils_llm import import_hf_model_and_tokenizer, import_genrec_model_and_tokenizer
 from helpers.utils_general import last_non_zero_index, log, get_absolute_path
 
@@ -11,17 +12,21 @@ class GenRec(LLMBasedRec[T]):
     def __init__(self, config, dataset, model_config, load_from_checkpoint=True, cls: Type[T]= None):
         self.number_of_history_items = 10
         self.lora_weights_path = config['lora_weights_path']
-        # TODO: Checkpoint path should be in config file. But, the checkpoint name should be chosen by the dataset type.
         self.checkpoint_model_name = config['checkpoint_model_name']
         super().__init__(config, dataset, model_config, load_from_checkpoint, cls)
-
+        
  
     def initialize_model_tokenizer(self, load_from_checkpoint):
+        if self.dataset_type_cls is DatasetMovieLens:
+            lora_weights_path_full = self.lora_weights_path + "/movies"
+        elif self.dataset_type_cls is DatasetAmazon:
+            lora_weights_path_full = self.lora_weights_path + "/toys"
+
         if load_from_checkpoint:
             model, tokenizer = import_genrec_model_and_tokenizer(
                 model_name=self.checkpoint_model_name, 
                 access_token=self.model_config.api_key,
-                lora_weights=get_absolute_path(self.lora_weights_path)
+                lora_weights=get_absolute_path(lora_weights_path_full)
             )
         else:
             model, tokenizer = import_hf_model_and_tokenizer(
@@ -37,9 +42,13 @@ class GenRec(LLMBasedRec[T]):
     
     
     def create_prompt(self, input):
-        # TODO: There is no way here to prevent mannual type checking
-        formatted_interactions = MOVIE_INTERACTIONS.format(input=input)
-        return f"""{MOVIE_INSTRUCTION} \n\n {formatted_interactions} \n\n {MOVIE_OUTPUT}"""
+        if self.dataset_type_cls is DatasetMovieLens:
+            instruction = MOVIE_INSTRUCTION
+        if self.dataset_type_cls is DatasetAmazon:
+            instruction = TOYS_INSTRUCTION
+        
+        formatted_interactions = INTERACTIONS.format(input=input)
+        return f"""{instruction} \n\n {formatted_interactions} \n\n {OUTPUT}"""
 
 
     def format_input(self, user_history_batch: List[UserInteractionHistory]):
@@ -83,7 +92,7 @@ class GenRec(LLMBasedRec[T]):
             
             log(f"RESULT: {text_result} \n\n")
 
-            all_results.append(text_result.split(MOVIE_OUTPUT)[1])
+            all_results.append(text_result.split(OUTPUT)[1])
         
         log("\n".join(all_results))
         return all_results

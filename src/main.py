@@ -5,7 +5,7 @@ from helpers.utils_general import get_absolute_path, ModelConfig, log
 from helpers.utils_recbole import get_model
 from prompts.prompts_general import LLAMA_PROMPT_FORMAT
 from data.dataset_enum import DatasetNameEnum
-from data.dataset import DatasetMovieLens
+from data.dataset import DatasetMovieLens, DatasetAmazon
 
 
 def create_config(model_class, dataset_name, props):
@@ -33,7 +33,7 @@ LLAMA2_CONFIG = ModelConfig(
 
 model_name = "GenRec"
 model_class = get_model(model_name)
-dataset_name = DatasetNameEnum.get_dataset_name('MOVIE_LENS')
+dataset_name = DatasetNameEnum.get_dataset_name('AMAZON_TOY_GAMES')
 
 props_dir = get_absolute_path("props")
 props = [
@@ -52,7 +52,7 @@ model = model_class(
     recbole_dataset, 
     LLAMA2_CONFIG, 
     load_from_checkpoint=True, 
-    cls=DatasetMovieLens
+    cls=DatasetAmazon
 ).to(config['device'])
 
 trainer = LLMBasedTrainer(config, model, recbole_dataset)

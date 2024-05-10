@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from data.item_tokens import DataTokensPool, DataTokensPoolMovieLens, DataTokensPoolAmazon
-from data.item_model import RecBoleItemMovieLens, RecBoleItemAmazon
+from data.item_model import DataItemModelMovieLens, DataItemModelAmazon
 
 
 class Dataset(ABC):
@@ -34,7 +34,7 @@ class DatasetMovieLens(Dataset):
     
     @classmethod
     def get_data_item_type(cls):
-        return RecBoleItemMovieLens 
+        return DataItemModelMovieLens 
     
     
 class DatasetAmazon(Dataset):
@@ -51,4 +51,4 @@ class DatasetAmazon(Dataset):
     
     @classmethod
     def get_data_item_type(cls):
-        return RecBoleItemAmazon
+        return DataItemModelAmazon

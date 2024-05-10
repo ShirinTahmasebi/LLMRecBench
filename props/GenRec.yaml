@@ -10,5 +10,5 @@ max_history_len: 50
 number_of_candidates: 20
 ground_truth_position: -1
 number_of_recommendations: 5
-lora_weights_path: 'checkpoints/genrec/movies'
+lora_weights_path: 'checkpoints/genrec'
 checkpoint_model_name: 'baffo32/decapoda-research-llama-7B-hf'

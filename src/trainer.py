@@ -10,10 +10,7 @@ class LLMBasedTrainer(Trainer):
         self.number_of_candidates = config['number_of_candidates']
         self.ground_truth_position = config['ground_truth_position'] # Set to -1 if it does not matter
         # TODO: Use this variable!
-        self.max_history_len = config['max_history_len']
-        
-        self.item_token2id = list(dataset.field2token_id['item_id'].keys())
-        
+        self.max_history_len = config['max_history_len']        
         self.data_path = config['data_path']
         self.dataset_name = dataset.dataset_name
                   

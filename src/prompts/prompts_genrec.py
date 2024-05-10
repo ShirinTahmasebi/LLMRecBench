@@ -1,5 +1,7 @@
 MOVIE_INSTRUCTION = """Instruction: Given the movie viewing habits, what is the most probable movie they will choose to watch next?"""
 
-MOVIE_INTERACTIONS = """### input: {input}"""
+TOYS_INSTRUCTION = """Given a customer's purchasing history, predict the toy they are most likely to purchase next."""
 
-MOVIE_OUTPUT = "### Response:"
+INTERACTIONS = """### Input: {input}"""
+
+OUTPUT = "### Response:"
