@@ -3,6 +3,7 @@ from typing import List
 from datetime import datetime
 from recbole.data.interaction import Interaction as RecBoleInteraction
 from helpers.utils_general import reshape_tensor_remove_zero_from_end
+from helpers.utils_global import *
 from data.item_model import DataItemModel
 from data.item_tokens import DataTokensPool
    
@@ -30,9 +31,9 @@ class UserInteractionHistory:
         user_interaction_list = []
         
         for i in range(len(interaction)):
-            user_id = tokens.user_token2id[interaction[i]['user_id']]
-            his_item_ids = reshape_tensor_remove_zero_from_end(interaction[i]['item_id_list'])
-            timestamp_list = interaction[i]['timestamp_list']
+            user_id = tokens.user_token2id[interaction[i][KEYWORDS.USER_ID]]
+            his_item_ids = reshape_tensor_remove_zero_from_end(interaction[i][KEYWORDS.ITEM_ID_LIST])
+            timestamp_list = interaction[i][KEYWORDS.TIMESTAMP_LIST]
             ground_truth = data_item_type.build_ground_truth(tokens, interaction, i)
             
             interaction_items = []       

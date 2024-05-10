@@ -6,16 +6,17 @@ from recbole.data.interaction import Interaction as RecBoleInteraction
 from data.user_interaction import UserInteractionHistory
 from data.item_tokens import DataTokensPool
 from helpers.utils_recbole import recbole_get_item_text
-from helpers.utils_general import log
+from helpers.utils_general import ModelConfig
+from helpers.utils_global import *
 
 
 T = TypeVar('T')
 class LLMBasedRec(ABC, SequentialRecommender, Generic[T]):
     
-    def __init__(self, config, dataset, model_config, load_from_checkpoint, cls: Type[T]):
+    def __init__(self, config, dataset, load_from_checkpoint, cls: Type[T]):
         super().__init__(config, dataset)
         self.dataset_type_cls = cls
-        self.initialize_variables(config, dataset, model_config)
+        self.initialize_variables(config, dataset)
         self.model, self.tokenizer = self.initialize_model_tokenizer(load_from_checkpoint)
         self.fake_fn = torch.nn.Linear(1, 1)
         if self.model:
@@ -46,13 +47,13 @@ class LLMBasedRec(ABC, SequentialRecommender, Generic[T]):
     def get_model_name(self):
         raise NotImplementedError(f"The model name is not defined for {self.__class__.__name__}.")
     
-    def initialize_variables(self, config, dataset, model_config):
-        self.number_of_recommendations = config['number_of_recommendations']
-        self.data_path = config['data_path']
+    def initialize_variables(self, config, dataset):
+        self.number_of_recommendations = config[KEYWORDS.NUMBER_OF_RECOMS]
+        self.data_path = config[KEYWORDS.DATA_PATH]
         self.dataset_name = dataset.dataset_name
         
-        item_token2id = list(dataset.field2token_id['item_id'].keys())
-        user_token2id = list(dataset.field2token_id['user_id'].keys())
+        item_token2id = list(dataset.field2token_id[KEYWORDS.ITEM_ID].keys())
+        user_token2id = list(dataset.field2token_id[KEYWORDS.USER_ID].keys())
         data_tokens_pool: DataTokensPool = recbole_get_item_text(
             data_path=self.data_path,
             dataset_name=self.dataset_name,
@@ -62,7 +63,15 @@ class LLMBasedRec(ABC, SequentialRecommender, Generic[T]):
         )
         
         self.dataset = self.dataset_type_cls(data_tokens_pool)
-        self.model_config = model_config
+        self.model_config = ModelConfig(
+            id=config[KEYWORDS.MODEL_NAME],
+            model_short_name=config[KEYWORDS.MODEL_SHORT_NAME],
+            api_key=ALL_API_KEYS["HF_API_KEY"],
+            temperature=config[KEYWORDS.TEMPERATURE], # The range is [0, 1]
+            top_p=config[KEYWORDS.TOP_P],
+            top_k=config[KEYWORDS.TOP_K],
+            max_tokens=config[KEYWORDS.MAX_TOKENS],
+        )
         self.item_num = dataset.item_num
 
 

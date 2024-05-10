@@ -2,6 +2,7 @@ import dataclasses
 from typing import List
 from datetime import datetime
 from abc import ABC, abstractmethod
+from helpers.utils_global import *
 
         
 @dataclasses.dataclass
@@ -43,11 +44,11 @@ class DataItemModelMovieLens(DataItemModel):
     
     @classmethod
     def build_ground_truth(cls, tokens, interaction, i):
-        gt_id =  tokens.item_token2id[interaction[i]['item_id']]
-        gt_title = tokens.item_token2text[interaction[i]['item_id']]
-        gt_year = tokens.item_token2release_year[interaction[i]['item_id']]
-        gt_genre = tokens.item_token2genre[interaction[i]['item_id']]
-        gt_timestamp = interaction[i]['timestamp'].item()
+        gt_id =  tokens.item_token2id[interaction[i][KEYWORDS.ITEM_ID]]
+        gt_title = tokens.item_token2text[interaction[i][KEYWORDS.ITEM_ID]]
+        gt_year = tokens.item_token2release_year[interaction[i][KEYWORDS.ITEM_ID]]
+        gt_genre = tokens.item_token2genre[interaction[i][KEYWORDS.ITEM_ID]]
+        gt_timestamp = interaction[i][KEYWORDS.TIMESTAMP].item()
         
         return DataItemModelMovieLens(
             item_id=gt_id,
@@ -88,9 +89,9 @@ class DataItemModelAmazon(DataItemModel):
     
     @classmethod
     def build_ground_truth(cls, tokens, interaction, i):
-        gt_id =  tokens.item_token2id[interaction[i]['item_id']]
-        gt_title = tokens.item_token2text[interaction[i]['item_id']]
-        gt_timestamp = interaction[i]['timestamp'].item()
+        gt_id =  tokens.item_token2id[interaction[i][KEYWORDS.ITEM_ID]]
+        gt_title = tokens.item_token2text[interaction[i][KEYWORDS.ITEM_ID]]
+        gt_timestamp = interaction[i][KEYWORDS.TIMESTAMP].item()
         
         return DataItemModelAmazon(
             item_id=gt_id,

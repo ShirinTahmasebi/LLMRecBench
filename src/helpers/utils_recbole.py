@@ -24,3 +24,7 @@ def recbole_get_item_text(
     feat_path = osp.join(data_path, f'{dataset_name}.item')    
     return token_pool_type(feat_path=feat_path, user_token2id=user_token2id, item_token2id=item_token2id)
   
+def create_config(model_class, dataset_name, props):
+    from recbole.config import Config
+    config = Config(model=model_class, dataset=dataset_name, config_file_list=props, config_dict=None)
+    return config

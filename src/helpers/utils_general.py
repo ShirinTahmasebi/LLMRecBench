@@ -5,18 +5,11 @@ import dataclasses
 class ModelConfig:
     id: str
     model_short_name: str
-    prompt_format: str
     api_key: str
     temperature: float
     top_p: float
     top_k: int
     max_tokens: int
-
-
-@dataclasses.dataclass
-class TaskConfig:
-    system_prompt: str
-    max_length: int = 100
     
 
 def get_absolute_path(path_relative_to_project_root):
@@ -63,11 +56,6 @@ def merge_dicts_with_non_matching_keys(dict1, dict2):
         if key not in dict1:
             merged_dict[key] = dict2[key]
     return merged_dict
-
-
-def log(text, in_debug_mode: bool = True):
-    if in_debug_mode:
-        print(f"{text}")
     
 
 def reshape_tensor_remove_zero_from_end(tensor):

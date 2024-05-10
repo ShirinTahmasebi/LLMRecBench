@@ -4,16 +4,17 @@ from model.llm_based_rec import LLMBasedRec
 from data.user_interaction import UserInteractionHistory
 from data.dataset import DatasetMovieLens, DatasetAmazon
 from helpers.utils_llm import import_hf_model_and_tokenizer, import_genrec_model_and_tokenizer
-from helpers.utils_general import last_non_zero_index, log, get_absolute_path
+from helpers.utils_general import last_non_zero_index, get_absolute_path
+from helpers.utils_global import *
 
 T = TypeVar('T')
 class GenRec(LLMBasedRec[T]):
     
-    def __init__(self, config, dataset, model_config, load_from_checkpoint=True, cls: Type[T]= None):
-        self.number_of_history_items = 10
-        self.lora_weights_path = config['lora_weights_path']
-        self.checkpoint_model_name = config['checkpoint_model_name']
-        super().__init__(config, dataset, model_config, load_from_checkpoint, cls)
+    def __init__(self, config, dataset, load_from_checkpoint=True, cls: Type[T]= None):
+        self.number_of_history_items = config[KEYWORDS.NUMBER_OF_HISTORY_ITEMS]
+        self.lora_weights_path = config[KEYWORDS.LORA_WEIGHTS_PATH]
+        self.checkpoint_model_name = config[KEYWORDS.CHECKPOINT_MODEL_NAME]
+        super().__init__(config, dataset, load_from_checkpoint, cls)
         
  
     def initialize_model_tokenizer(self, load_from_checkpoint):
@@ -35,7 +36,6 @@ class GenRec(LLMBasedRec[T]):
             )        
         
         return model, tokenizer
-
     
     def get_model_name(self):
         return "GenRec"
