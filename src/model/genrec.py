@@ -1,4 +1,5 @@
 from typing import List, TypeVar, Type
+from transformers import GenerationConfig
 from prompts.prompts_genrec import *
 from model.llm_based_rec import LLMBasedRec
 from data.user_interaction import UserInteractionHistory
@@ -77,24 +78,33 @@ class GenRec(LLMBasedRec[T]):
         for input in model_input_txt_batch:
             input_ids = self.tokenizer(input, return_tensors='pt').input_ids.cuda()
             
-            result = self.model.generate(
-                input_ids=input_ids, 
+            # https://github.com/huggingface/transformers/blob/4fdf58afb72b0754da30037fc800b6044e7d9c99/src/transformers/generation/configuration_utils.py#L62
+            generation_config = GenerationConfig(
                 max_new_tokens=self.model_config.max_tokens,
-                do_sample=True, 
-                top_p=0.01, 
                 temperature=self.model_config.temperature,
+                top_p=self.model_config.top_p,
+                top_k=self.model_config.top_k,
+                num_beams=self.number_of_recommendations, 
+                num_return_sequences=self.number_of_recommendations, 
+                do_sample=True
             )
             
-            text_result = self.tokenizer.batch_decode(
-                result.detach().cpu().numpy(), 
-                skip_special_tokens=True
-            )[0]
+            results = self.model.generate(
+                input_ids=input_ids,
+                generation_config=generation_config
+            )
             
-            log(f"RESULT: {text_result} \n\n")
+            text_results = self.tokenizer.batch_decode(
+                results.detach().cpu().numpy(), 
+                skip_special_tokens=True
+            )
+            
+            recommendations = [s.split(OUTPUT)[1] for s in text_results if s.count(',') >= 1]
 
-            all_results.append(text_result.split(OUTPUT)[1])
+            log(f"RESULT: {recommendations} \n\n")
+
+            all_results.append(";".join(recommendations))
         
-        log("\n".join(all_results))
         return all_results
 
         
