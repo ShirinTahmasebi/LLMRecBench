@@ -37,10 +37,15 @@ class GenRec(LLMBasedRec[T]):
             )        
         
         return model, tokenizer
-    
+
+
     def get_model_name(self):
         return "GenRec"
     
+    def count_tokens(self, inputs_list: list):
+        tokens_list = [self.tokenizer(input, return_tensors='pt').input_ids[0] for input in inputs_list]
+        len_list = [len(tokens) for tokens in tokens_list]
+        return len_list
     
     def create_prompt(self, input):
         if self.dataset_type_cls is DatasetMovieLens:
@@ -66,9 +71,10 @@ class GenRec(LLMBasedRec[T]):
                 start_index,
                 end_index
             )
-                    
-            interactions_prompt_txt_batch.append(self.create_prompt(", ".join(output_interaction)))    
-            interactions_txt_batch.append(", ".join(output_interaction))
+            
+            final_prompt, valid_interactions_txt = self.append_interations_safe_context_window(output_interaction)
+            interactions_prompt_txt_batch.append(final_prompt)
+            interactions_txt_batch.append(valid_interactions_txt)
                 
         return interactions_prompt_txt_batch, interactions_txt_batch
 
@@ -76,7 +82,10 @@ class GenRec(LLMBasedRec[T]):
     def call_llm(self, model_input_txt_batch: list):
         all_results = []
         for input in model_input_txt_batch:
+            import torch
+            torch.cuda.empty_cache()
             input_ids = self.tokenizer(input, return_tensors='pt').input_ids.cuda()
+            log(f"Input Length: {len(input_ids[0])} - {self.count_tokens([input])}")
             
             # https://github.com/huggingface/transformers/blob/4fdf58afb72b0754da30037fc800b6044e7d9c99/src/transformers/generation/configuration_utils.py#L62
             generation_config = GenerationConfig(
@@ -84,7 +93,6 @@ class GenRec(LLMBasedRec[T]):
                 temperature=self.model_config.temperature,
                 top_p=self.model_config.top_p,
                 top_k=self.model_config.top_k,
-                num_beams=self.number_of_recommendations, 
                 num_return_sequences=self.number_of_recommendations, 
                 do_sample=True
             )
@@ -98,12 +106,12 @@ class GenRec(LLMBasedRec[T]):
                 results.detach().cpu().numpy(), 
                 skip_special_tokens=True
             )
-            
+                        
             recommendations = [s.split(OUTPUT)[1] for s in text_results if s.count(',') >= 1]
 
-            log(f"RESULT: {recommendations} \n\n")
+            log(f"Result: {recommendations} \n\n")
 
-            all_results.append(";".join(recommendations))
+            all_results.append(";;".join(recommendations))
         
         return all_results
 

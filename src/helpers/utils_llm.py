@@ -38,7 +38,7 @@ def import_genrec_model_and_tokenizer(model_name: str, access_token: str, **kwar
     language_model =  LlamaForCausalLM.from_pretrained(
         model_name,
         load_in_8bit=True,
-        torch_dtype=torch.bfloat16,
+        torch_dtype=torch.float16,
         device_map={'':0},
         token=access_token
     )
@@ -46,7 +46,7 @@ def import_genrec_model_and_tokenizer(model_name: str, access_token: str, **kwar
     language_model = PeftModel.from_pretrained(
         language_model,
         kwargs["lora_weights"],
-        torch_dtype=torch.bfloat16,
+        torch_dtype=torch.float16,
         device_map={'':0},
     )
     

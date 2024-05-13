@@ -1,6 +1,6 @@
 import torch
 from abc import ABC, abstractmethod
-from typing import Generic, TypeVar, Type
+from typing import Generic, TypeVar, Type, List
 from recbole.model.abstract_recommender import SequentialRecommender
 from recbole.data.interaction import Interaction as RecBoleInteraction
 from data.user_interaction import UserInteractionHistory
@@ -47,6 +47,14 @@ class LLMBasedRec(ABC, SequentialRecommender, Generic[T]):
     def get_model_name(self):
         raise NotImplementedError(f"The model name is not defined for {self.__class__.__name__}.")
     
+    @abstractmethod
+    def count_tokens(self, input: str):
+        raise NotImplementedError(f"The token counter is not defined for {self.__class__.__name__}.")
+    
+    
+    def get_context_window_limit(self):
+        return 4096
+    
     def initialize_variables(self, config, dataset):
         self.number_of_recommendations = config[KEYWORDS.NUMBER_OF_RECOMS]
         self.data_path = config[KEYWORDS.DATA_PATH]
@@ -64,8 +72,8 @@ class LLMBasedRec(ABC, SequentialRecommender, Generic[T]):
         
         self.dataset = self.dataset_type_cls(data_tokens_pool)
         self.model_config = ModelConfig(
-            id=config[KEYWORDS.MODEL_NAME],
-            model_short_name=config[KEYWORDS.MODEL_SHORT_NAME],
+            id=config[KEYWORDS.MODEL_NAME_NO_CHECKPOINT],
+            model_short_name=config[KEYWORDS.MODEL_SHORT_NAME_NO_CHECKPOINT],
             api_key=ALL_API_KEYS["HF_API_KEY"],
             temperature=config[KEYWORDS.TEMPERATURE], # The range is [0, 1]
             top_p=config[KEYWORDS.TOP_P],
@@ -78,7 +86,26 @@ class LLMBasedRec(ABC, SequentialRecommender, Generic[T]):
     def remove_hallucination(self, recommended_items_batch: list):
         # TODO: Check hallucination
         return recommended_items_batch
+    
+    
+    def append_interations_safe_context_window(self, interactions_list: List[str]):
+        dummy_prompt = self.create_prompt(" ")
+        current_tokens_count = self.count_tokens([dummy_prompt])[0] + self.model_config.max_tokens
+        interactions_to_be_injected = []
         
+        for interaction in interactions_list:
+            additional_tokens_count = self.count_tokens([interaction + ", "])[0]
+            
+            if current_tokens_count + additional_tokens_count > self.get_context_window_limit():
+                break
+            
+            current_tokens_count += additional_tokens_count
+            interactions_to_be_injected.append(interaction)
+            
+        final_prompt = self.create_prompt(", ".join(interactions_to_be_injected))
+        return final_prompt, ", ".join(interactions_to_be_injected)
+    
+    
     def evaluate_score(self, recommended_items_batch: list, gt_names_batch: list):
         import math
         
@@ -115,6 +142,8 @@ class LLMBasedRec(ABC, SequentialRecommender, Generic[T]):
         
         
     def full_sort_predict(self, interaction: RecBoleInteraction):
+        import time
+
         users_interactions_list = UserInteractionHistory.build(
             interaction=interaction,
             tokens=self.dataset.get_token_pools(), 
@@ -124,9 +153,13 @@ class LLMBasedRec(ABC, SequentialRecommender, Generic[T]):
         user_ids_batch = UserInteractionHistory.get_user_ids(users_interactions_list)
         gt_names_batch = UserInteractionHistory.get_gt_titles(users_interactions_list)
         
-        model_input_txt_batch, interactions_txt_batch = self.format_input(users_interactions_list)
-        model_output_txt_batch = self.call_llm(model_input_txt_batch)
+        log(f"User IDs: {','.join(user_ids_batch)}")
         
+        model_input_txt_batch, interactions_txt_batch = self.format_input(users_interactions_list)
+        start_time = time.time_ns()
+        model_output_txt_batch = self.call_llm(model_input_txt_batch)
+        end_time = time.time_ns()
+
         recommended_items_batch: list = self.process_output(model_output_txt_batch)        
         hit5_batch, hit10_batch, ndcg5_batch, ndcg10_batch = \
             self.evaluate_score(recommended_items_batch, gt_names_batch)
@@ -148,6 +181,7 @@ class LLMBasedRec(ABC, SequentialRecommender, Generic[T]):
             "hit@5_no_hallu": hit5_no_hallu_batch,
             "hit@10_no_hallu": hit10_no_hallu_batch, 
             "ndcg@5_no_hallu": ndcg5_no_hallu_batch, 
-            "ndcg@10_no_hallu": ndcg10_no_hallu_batch
+            "ndcg@10_no_hallu": ndcg10_no_hallu_batch,
+            "average_execution_time_ns": [(end_time - start_time) // len(user_ids_batch)] * len(user_ids_batch),
         }
     

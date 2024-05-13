@@ -49,12 +49,12 @@ class Keywords(object):
         return 'timestamp_list' 
      
     @constant
-    def MODEL_NAME():
-        return 'model_name' 
+    def MODEL_NAME_NO_CHECKPOINT():
+        return 'no_checkpoint_model_name' 
      
     @constant
-    def MODEL_SHORT_NAME():
-        return 'model_short_name' 
+    def MODEL_SHORT_NAME_NO_CHECKPOINT():
+        return 'no_checkpoint_model_short_name' 
      
     @constant
     def TEMPERATURE():
