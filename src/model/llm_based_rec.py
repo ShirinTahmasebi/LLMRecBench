@@ -93,6 +93,7 @@ class LLMBasedRec(ABC, SequentialRecommender, Generic[T]):
         current_tokens_count = self.count_tokens([dummy_prompt])[0] + self.model_config.max_tokens
         interactions_to_be_injected = []
         
+        counter = 0
         for interaction in interactions_list:
             additional_tokens_count = self.count_tokens([interaction + ", "])[0]
             
@@ -101,9 +102,10 @@ class LLMBasedRec(ABC, SequentialRecommender, Generic[T]):
             
             current_tokens_count += additional_tokens_count
             interactions_to_be_injected.append(interaction)
+            counter += 1
             
         final_prompt = self.create_prompt(", ".join(interactions_to_be_injected))
-        return final_prompt, ", ".join(interactions_to_be_injected)
+        return final_prompt, ", ".join(interactions_to_be_injected), counter
     
     
     def evaluate_score(self, recommended_items_batch: list, gt_names_batch: list):
@@ -155,7 +157,10 @@ class LLMBasedRec(ABC, SequentialRecommender, Generic[T]):
         
         log(f"User IDs: {','.join(user_ids_batch)}")
         
-        model_input_txt_batch, interactions_txt_batch = self.format_input(users_interactions_list)
+        model_input_txt_batch, \
+            interactions_txt_batch, \
+                interactions_injected_count_batch = self.format_input(users_interactions_list)
+        
         start_time = time.time_ns()
         model_output_txt_batch = self.call_llm(model_input_txt_batch)
         end_time = time.time_ns()
@@ -171,6 +176,7 @@ class LLMBasedRec(ABC, SequentialRecommender, Generic[T]):
         return {
             "user_id": user_ids_batch,
             "interaction_history": interactions_txt_batch,
+            "number_of_interactions": interactions_injected_count_batch,
             "ground_truth": gt_names_batch,
             "recommended_items": recommended_items_batch,
             "hit@5": hit5_batch,

@@ -7,6 +7,7 @@ from data.dataset import DatasetMovieLens, DatasetAmazon
 from helpers.utils_llm import import_hf_model_and_tokenizer, import_genrec_model_and_tokenizer
 from helpers.utils_general import last_non_zero_index, get_absolute_path
 from helpers.utils_global import *
+import torch
 
 T = TypeVar('T')
 class GenRec(LLMBasedRec[T]):
@@ -36,6 +37,7 @@ class GenRec(LLMBasedRec[T]):
                 access_token=self.model_config.api_key
             )        
         
+        model.eval()
         return model, tokenizer
 
 
@@ -60,29 +62,34 @@ class GenRec(LLMBasedRec[T]):
     def format_input(self, user_history_batch: List[UserInteractionHistory]):
         interactions_prompt_txt_batch = []
         interactions_txt_batch = []
+        interactions_injected_count_batch = []
         
         for history_per_user in user_history_batch:
             data_item_cls = self.dataset.get_data_item_type()
             his_items_count = last_non_zero_index(data_item_cls.get_item_ids(history_per_user.interaction_items)) + 1
-            start_index = his_items_count - self.number_of_history_items
-            end_index = his_items_count 
+            if self.number_of_history_items > his_items_count:
+                start_index = 0
+                end_index = his_items_count
+            else:
+                start_index = his_items_count - self.number_of_history_items
+                end_index = his_items_count 
             output_interaction = data_item_cls.get_interactions_text(
                 history_per_user.interaction_items,
                 start_index,
                 end_index
             )
             
-            final_prompt, valid_interactions_txt = self.append_interations_safe_context_window(output_interaction)
+            final_prompt, valid_interactions_txt, injected_interactions_count = self.append_interations_safe_context_window(output_interaction)
             interactions_prompt_txt_batch.append(final_prompt)
             interactions_txt_batch.append(valid_interactions_txt)
+            interactions_injected_count_batch.append(injected_interactions_count)
                 
-        return interactions_prompt_txt_batch, interactions_txt_batch
+        return interactions_prompt_txt_batch, interactions_txt_batch, interactions_injected_count_batch
 
         
     def call_llm(self, model_input_txt_batch: list):
         all_results = []
         for input in model_input_txt_batch:
-            import torch
             torch.cuda.empty_cache()
             input_ids = self.tokenizer(input, return_tensors='pt').input_ids.cuda()
             log(f"Input Length: {len(input_ids[0])} - {self.count_tokens([input])}")
@@ -97,15 +104,16 @@ class GenRec(LLMBasedRec[T]):
                 do_sample=True
             )
             
-            results = self.model.generate(
-                input_ids=input_ids,
-                generation_config=generation_config
-            )
+            with torch.no_grad():
+                results = self.model.generate(
+                    input_ids=input_ids,
+                    generation_config=generation_config
+                )
             
-            text_results = self.tokenizer.batch_decode(
-                results.detach().cpu().numpy(), 
-                skip_special_tokens=True
-            )
+                text_results = self.tokenizer.batch_decode(
+                    results.detach().cpu().numpy(), 
+                    skip_special_tokens=True
+                )
                         
             recommendations = [s.split(OUTPUT)[1] for s in text_results if s.count(',') >= 1]
 
