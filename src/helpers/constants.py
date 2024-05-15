@@ -17,6 +17,10 @@ class Keywords(object):
         return 'number_of_recommendations' 
     
     @constant
+    def NUMBER_OF_USERS_TO_TRAIN():
+        return 'num_of_users_to_train' 
+    
+    @constant
     def GT_POSITION():
         return 'ground_truth_position'
      

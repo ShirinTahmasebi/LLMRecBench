@@ -37,12 +37,14 @@ class GenRec(LLMBasedRec[T]):
                 access_token=self.model_config.api_key
             )        
         
-        model.eval()
         return model, tokenizer
-
+    
 
     def get_model_name(self):
         return "GenRec"
+    
+    def get_train_data_hf_hub(self):
+        return ALL_API_KEYS["HF_DATASET_REPO_NAME"]
     
     def count_tokens(self, inputs_list: list):
         tokens_list = [self.tokenizer(input, return_tensors='pt').input_ids[0] for input in inputs_list]

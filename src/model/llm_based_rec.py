@@ -46,6 +46,10 @@ class LLMBasedRec(ABC, SequentialRecommender, Generic[T]):
     @abstractmethod
     def get_model_name(self):
         raise NotImplementedError(f"The model name is not defined for {self.__class__.__name__}.")
+        
+    @abstractmethod
+    def get_train_data_hf_hub(self):
+        raise NotImplementedError(f"The train data hub is not defined for {self.__class__.__name__}.")
     
     @abstractmethod
     def count_tokens(self, input: str):
@@ -142,7 +146,21 @@ class LLMBasedRec(ABC, SequentialRecommender, Generic[T]):
         return hit5_batch, hit10_batch, ndcg5_batch, ndcg10_batch
                 
         
+    def get_train_text(self, interaction: RecBoleInteraction):
+
+        users_interactions_list = UserInteractionHistory.build(
+            interaction=interaction,
+            tokens=self.dataset.get_token_pools(), 
+            data_item_type=self.dataset_type_cls.get_data_item_type()
+        )        
         
+        model_input_txt_batch, _, _ = self.format_input(users_interactions_list)
+        gt_names_batch = UserInteractionHistory.get_gt_titles(users_interactions_list)
+
+        train_data = [input + " " + response for input, response in zip(model_input_txt_batch, gt_names_batch)]
+        return train_data
+        
+    
     def full_sort_predict(self, interaction: RecBoleInteraction):
         import time
 

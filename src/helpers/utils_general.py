@@ -66,3 +66,9 @@ def reshape_tensor_remove_zero_from_end(tensor):
         sliced_array = tensor[:zero_index]
         return sliced_array
     return tensor
+
+
+def huggingface_api_login(api_token):
+    from huggingface_hub import HfApi, HfFolder
+    HfFolder.save_token(api_token)
+    api = HfApi()

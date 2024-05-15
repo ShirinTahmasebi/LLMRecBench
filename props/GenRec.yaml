@@ -9,7 +9,7 @@ top_k: 10
 max_tokens: 500
 
 # Solution Details
-number_of_history_items: 10
+number_of_history_items: 30
 number_of_candidates: -1
 ground_truth_position: -1
 number_of_recommendations: 10
@@ -17,3 +17,7 @@ number_of_recommendations: 10
 # Paths
 lora_weights_path: 'checkpoints/genrec'
 checkpoint_model_name: 'baffo32/decapoda-research-llama-7B-hf'
+
+
+# Training Args
+num_of_users_to_train: 4000

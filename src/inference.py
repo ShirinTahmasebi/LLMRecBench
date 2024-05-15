@@ -1,4 +1,4 @@
-from trainer import LLMBasedTrainer
+from recbole_trainer import LLMBasedTrainer
 from recbole.data import data_preparation
 from recbole.data.dataset.sequential_dataset import SequentialDataset
 from helpers.utils_general import get_absolute_path
@@ -60,7 +60,7 @@ if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('--model_name', type=str, default="GenRec", help='The model name to run')
-    parser.add_argument('--dataset_name', type=str, default="MOVIE_LENS", help='It should be chosen from DatasetNameEnum')
+    parser.add_argument('--dataset_name', type=str, default="AMAZON_TOY_GAMES", help='It should be chosen from DatasetNameEnum')
     parser.add_argument('--start_index', type=int, default=0, help='Start Index of Data')
     parser.add_argument('--end_index', type=int, default=10, help='End Index of Data')
 

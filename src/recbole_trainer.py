@@ -1,7 +1,7 @@
 from recbole.trainer import Trainer
 from tqdm import tqdm
 from recbole.utils import set_color
-from helpers.utils_general import merge_dicts_with_matching_keys
+from helpers.utils_general import merge_dicts_with_matching_keys, huggingface_api_login
 from helpers.utils_global import *
 import pandas as pd
 
@@ -9,6 +9,7 @@ class LLMBasedTrainer(Trainer):
     def __init__(self, config, model, dataset):
         super().__init__(config, model)
         self.number_of_candidates = config[KEYWORDS.NUMBER_OF_CANDIDATES]
+        self.number_of_users_to_train = config[KEYWORDS.NUMBER_OF_USERS_TO_TRAIN]
         self.ground_truth_position = config[KEYWORDS.GT_POSITION] # Set to -1 if it does not matter       
         self.data_path = config[KEYWORDS.DATA_PATH]
         self.dataset_name = dataset.dataset_name
@@ -61,3 +62,52 @@ class LLMBasedTrainer(Trainer):
             df = pd.DataFrame(result_dic_final)
             df.to_csv(f"{output_file_name}.csv", index=False)
             counter += batch_size
+
+
+    def load_or_create_train_dataset(self, train_data):
+        huggingface_api_login(ALL_API_KEYS["HF_HUB_KEY"])
+        
+        data_text = []
+        set_of_user_ids = set()
+        list_of_user_ids = []
+        list_of_interactions_count = []
+        
+        for _, interactions_batch in enumerate(train_data):
+            if len(set_of_user_ids) >= self.number_of_users_to_train:
+                log(f"""
+                    ---------------------------------------- 
+                    Training Data Details:
+                        Number of Unique Users = {len(set_of_user_ids)}
+                        Number of Records = {len(list_of_user_ids)}
+                        Number of Interactions per All Users = {set(list_of_interactions_count)}
+                    ----------------------------------------
+                    """)
+                break
+            user_ids_list = interactions_batch['user_id'].tolist()
+            number_of_interactions = [len(per_user) for per_user in interactions_batch['item_id_list']]
+            list_of_user_ids.extend(user_ids_list)
+            list_of_interactions_count.extend(number_of_interactions)
+            set_of_user_ids.update(user_ids_list)
+            text_batch = self.model.get_train_text(interactions_batch)
+            data_text.extend(text_batch)
+        
+        jsonl_file_path = get_absolute_path(f'{self.model.get_model_name()}_train.jsonl')
+
+        with open(jsonl_file_path, 'a') as outfile:
+            for item in data_text:
+                outfile.write('{"text": "' + item.replace('\n', '\\n') + '"}')
+                outfile.write('\n')
+        
+        from datasets import load_dataset
+        dataset = load_dataset('json', data_files=jsonl_file_path, split='train')
+        dataset.push_to_hub(self.model.get_train_data_hf_hub())
+        
+        return dataset
+    
+    
+    def train(self, train_data, valid_data, start_num=0, end_num=-1, show_progress=False):
+        try:
+            from datasets import load_dataset
+            dataset = load_dataset(self.model.get_train_data_hf_hub(), use_auth_token=True)
+        except Exception as e:
+            dataset = self.load_or_create_train_dataset(train_data)
