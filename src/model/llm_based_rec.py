@@ -1,6 +1,7 @@
 import torch
 from abc import ABC, abstractmethod
 from typing import Generic, TypeVar, Type, List
+from datasets import Dataset
 from recbole.model.abstract_recommender import SequentialRecommender
 from recbole.data.interaction import Interaction as RecBoleInteraction
 from data.user_interaction import UserInteractionHistory
@@ -36,8 +37,12 @@ class LLMBasedRec(ABC, SequentialRecommender, Generic[T]):
         raise NotImplementedError(f"The input formatting metod is not defined for {self.__class__.__name__}.")
         
     @abstractmethod
-    def call_llm(self, model_input_txt_batch: list):
+    def inference_llm(self, model_input_txt_batch: list):
         raise NotImplementedError(f"The model text generation method is not defined for {self.__class__.__name__}.")
+           
+    @abstractmethod
+    def finetune_llm(self, train_dataset: Dataset, val_dataset: Dataset):
+        raise NotImplementedError(f"The model finetuning is not defined for {self.__class__.__name__}.")
          
     @abstractmethod
     def process_output(self, model_output_txt_batch: list):
@@ -54,7 +59,6 @@ class LLMBasedRec(ABC, SequentialRecommender, Generic[T]):
     @abstractmethod
     def count_tokens(self, input: str):
         raise NotImplementedError(f"The token counter is not defined for {self.__class__.__name__}.")
-    
     
     def get_context_window_limit(self):
         return 4096
@@ -180,7 +184,7 @@ class LLMBasedRec(ABC, SequentialRecommender, Generic[T]):
                 interactions_injected_count_batch = self.format_input(users_interactions_list)
         
         start_time = time.time_ns()
-        model_output_txt_batch = self.call_llm(model_input_txt_batch)
+        model_output_txt_batch = self.inference_llm(model_input_txt_batch)
         end_time = time.time_ns()
 
         recommended_items_batch: list = self.process_output(model_output_txt_batch)        

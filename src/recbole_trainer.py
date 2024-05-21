@@ -1,7 +1,7 @@
 from recbole.trainer import Trainer
 from tqdm import tqdm
 from recbole.utils import set_color
-from helpers.utils_general import merge_dicts_with_matching_keys, huggingface_api_login
+from helpers.utils_general import merge_dicts_with_matching_keys, huggingface_api_login, get_absolute_path
 from helpers.utils_global import *
 import pandas as pd
 
@@ -9,8 +9,12 @@ class LLMBasedTrainer(Trainer):
     def __init__(self, config, model, dataset):
         super().__init__(config, model)
         self.number_of_candidates = config[KEYWORDS.NUMBER_OF_CANDIDATES]
-        self.number_of_users_to_train = config[KEYWORDS.NUMBER_OF_USERS_TO_TRAIN]
-        self.ground_truth_position = config[KEYWORDS.GT_POSITION] # Set to -1 if it does not matter       
+        self.number_of_users_to_train = config[KEYWORDS.FINETUNING_NUM_OF_USERS_TO_TRAIN]
+        self.ground_truth_position = config[KEYWORDS.GT_POSITION] # Set to -1 if it does not matter  
+        self.temperature = config[KEYWORDS.TEMPERATURE] # The range is [0, 1]
+        self.top_p = config[KEYWORDS.TOP_P]
+        self.top_k = config[KEYWORDS.TOP_K]
+        self.max_tokens = config[KEYWORDS.MAX_TOKENS],   
         self.data_path = config[KEYWORDS.DATA_PATH]
         self.dataset_name = dataset.dataset_name
         self.output_file_name = \
@@ -105,9 +109,17 @@ class LLMBasedTrainer(Trainer):
         return dataset
     
     
-    def train(self, train_data, valid_data, start_num=0, end_num=-1, show_progress=False):
+    def train(self, train_data, _, start_num=0, end_num=-1, show_progress=False):
         try:
             from datasets import load_dataset
             dataset = load_dataset(self.model.get_train_data_hf_hub(), use_auth_token=True)
-        except Exception as e:
+        except Exception as _:
             dataset = self.load_or_create_train_dataset(train_data)
+        
+        # TODO: If the dataset structure changes, then I need to change this part as well. 
+        total_size = len(dataset['train'])
+        train_index = int(total_size * .9)
+        train_dataset = dataset['train'].select(range(0, train_index))
+        val_dataset = dataset['train'].select(range(train_index, total_size))
+        
+        self.model.finetune_llm(train_dataset, val_dataset)

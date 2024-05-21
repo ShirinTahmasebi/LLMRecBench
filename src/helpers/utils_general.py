@@ -1,6 +1,5 @@
 import dataclasses
 
-
 @dataclasses.dataclass
 class ModelConfig:
     id: str
@@ -72,3 +71,19 @@ def huggingface_api_login(api_token):
     from huggingface_hub import HfApi, HfFolder
     HfFolder.save_token(api_token)
     api = HfApi()
+    
+
+# TODO: I think utils_llm.py is a better place for having this function.    
+from transformers import TrainerCallback
+class SaveCheckpointCallback(TrainerCallback):
+    def __init__(self, save_steps, output_dir):
+        self.save_steps = save_steps
+        self.output_dir = output_dir
+
+    def on_step_end(self, args, state, control, **kwargs):
+        from helpers.utils_global import log
+        if state.global_step % self.save_steps == 0:
+            checkpoint_dir = f"{self.output_dir}/checkpoint-{state.global_step}"
+            kwargs["model"].save_pretrained(checkpoint_dir)
+            kwargs["tokenizer"].save_pretrained(checkpoint_dir)
+            log(f"Saved checkpoint at step {state.global_step} to {checkpoint_dir}")

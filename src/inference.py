@@ -40,6 +40,10 @@ def execute(
             End Index = {end_num}
             Number of Recommendations = {config[KEYWORDS.NUMBER_OF_RECOMS]}
             Number of History Items = {config[KEYWORDS.NUMBER_OF_HISTORY_ITEMS]}
+            Temperature = {config[KEYWORDS.TEMPERATURE]}
+            Max Tokens = {config[KEYWORDS.MAX_TOKENS]}
+            Top-K = {config[KEYWORDS.TOP_K]}
+            Top-P = {config[KEYWORDS.TOP_P]}
         ---------------------
         """)
     

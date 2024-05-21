@@ -18,7 +18,9 @@ class GenRec(LLMBasedRec[T]):
         self.checkpoint_model_name = config[KEYWORDS.CHECKPOINT_MODEL_NAME]
         super().__init__(config, dataset, load_from_checkpoint, cls)
         
- 
+    def finetune_llm(self, train_dataset, val_dataset):
+        raise NotImplementedError(f"The model text generation method is not defined for {self.__class__.__name__}.")
+      
     def initialize_model_tokenizer(self, load_from_checkpoint):
         if self.dataset_type_cls is DatasetMovieLens:
             lora_weights_path_full = self.lora_weights_path + "/movies"
@@ -89,7 +91,7 @@ class GenRec(LLMBasedRec[T]):
         return interactions_prompt_txt_batch, interactions_txt_batch, interactions_injected_count_batch
 
         
-    def call_llm(self, model_input_txt_batch: list):
+    def inference_llm(self, model_input_txt_batch: list):
         all_results = []
         for input in model_input_txt_batch:
             torch.cuda.empty_cache()
