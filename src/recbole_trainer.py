@@ -17,11 +17,12 @@ class LLMBasedTrainer(Trainer):
         self.max_tokens = config[KEYWORDS.MAX_TOKENS],   
         self.data_path = config[KEYWORDS.DATA_PATH]
         self.dataset_name = dataset.dataset_name
-        self.output_file_name = \
-            f"{self.model.get_model_name()}_" + \
-            f"{self.dataset_name}_" + \
-            f"history{config[KEYWORDS.NUMBER_OF_HISTORY_ITEMS]}_" + \
-            f"recoms{config[KEYWORDS.NUMBER_OF_RECOMS]}_"
+        self.output_file_path = \
+            f"results/{self.model.get_model_name()}_" + \
+            f"{self.dataset_name}" + \
+            f"/history{config[KEYWORDS.NUMBER_OF_HISTORY_ITEMS]}_" + \
+            f"recoms{config[KEYWORDS.NUMBER_OF_RECOMS]}"
+        self.output_file_name = f"temp{str(self.temperature).replace('.', 'p')}_"
         
         if self.number_of_candidates > 0 and self.ground_truth_position > 0:
             self.output_file_name =  self.output_file_name + \
@@ -32,7 +33,9 @@ class LLMBasedTrainer(Trainer):
       
     def evaluate(self, eval_data, start_num=0, end_num=-1, show_progress=False):
         
-        output_file_name = f"{self.output_file_name}start{start_num}_end{end_num}"
+        output_file_name = f"{self.output_file_name}start{start_num}_end{end_num}"        
+        log(f"\n\n --> The output file name is: {output_file_name}\n\n")
+        
         total_items_to_be_processed = end_num - start_num if end_num > 0 else len(eval_data) * eval_data.batch_size
         iter_data = (
             tqdm(
@@ -44,7 +47,7 @@ class LLMBasedTrainer(Trainer):
             if show_progress
             else eval_data
         )
-     
+
         counter = 0
         result_dic_final = {}
         for index, batched_data in enumerate(iter_data):
@@ -64,7 +67,11 @@ class LLMBasedTrainer(Trainer):
             result_dic_final = merge_dicts_with_matching_keys(result_dic, result_dic_final)
             
             df = pd.DataFrame(result_dic_final)
-            df.to_csv(f"{output_file_name}.csv", index=False)
+            
+            if not os.path.exists(get_absolute_path(self.output_file_path)):
+                os.makedirs(get_absolute_path(self.output_file_path))
+                
+            df.to_csv(f"{get_absolute_path(self.output_file_path)}/{output_file_name}_1.csv", index=False)
             counter += batch_size
 
 

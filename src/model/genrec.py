@@ -60,7 +60,11 @@ class GenRec(LLMBasedRec[T]):
             instruction = TOYS_INSTRUCTION
         
         formatted_interactions = INTERACTIONS.format(input=input)
-        return f"""{instruction} \n\n {formatted_interactions} \n\n {OUTPUT}"""
+        return f"""{instruction}
+
+{formatted_interactions}
+    
+{OUTPUT}"""
 
 
     def format_input(self, user_history_batch: List[UserInteractionHistory]):
@@ -93,20 +97,35 @@ class GenRec(LLMBasedRec[T]):
         
     def inference_llm(self, model_input_txt_batch: list):
         all_results = []
+         
+        log(
+            f"""
+            max_new_tokens={self.model_config.max_tokens},
+            temperature={self.model_config.temperature},
+            top_p={self.model_config.top_p},
+            top_k={self.model_config.top_k},
+            do_sample=True,
+            num_beams={self.number_of_recommendations}, 
+            num_return_sequences={self.number_of_recommendations},
+            """
+        )
+        
+        # https://github.com/huggingface/transformers/blob/4fdf58afb72b0754da30037fc800b6044e7d9c99/src/transformers/generation/configuration_utils.py#L62
+        generation_config = GenerationConfig(
+            max_new_tokens=self.model_config.max_tokens,
+            temperature=self.model_config.temperature,
+            top_p=self.model_config.top_p,
+            top_k=self.model_config.top_k,
+            do_sample=True,
+            num_beams=self.number_of_recommendations, 
+            num_return_sequences=self.number_of_recommendations, 
+        )
+            
         for input in model_input_txt_batch:
             torch.cuda.empty_cache()
             input_ids = self.tokenizer(input, return_tensors='pt').input_ids.cuda()
             log(f"Input Length: {len(input_ids[0])} - {self.count_tokens([input])}")
-            
-            # https://github.com/huggingface/transformers/blob/4fdf58afb72b0754da30037fc800b6044e7d9c99/src/transformers/generation/configuration_utils.py#L62
-            generation_config = GenerationConfig(
-                max_new_tokens=self.model_config.max_tokens,
-                temperature=self.model_config.temperature,
-                top_p=self.model_config.top_p,
-                top_k=self.model_config.top_k,
-                num_return_sequences=self.number_of_recommendations, 
-                do_sample=True
-            )
+            log(f"\n\n Input: {input} \n\n")
             
             with torch.no_grad():
                 results = self.model.generate(
