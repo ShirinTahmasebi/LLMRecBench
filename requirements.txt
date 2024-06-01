@@ -27,6 +27,8 @@ datasets
 accelerate
 peft
 trl
+sentencepiece
+setuptools==58.1.0
 ##
 ## General
 pandas

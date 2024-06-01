@@ -52,10 +52,10 @@ def process_single_result_file(input_file, output_file):
                     outfile.write(current_line + '\n')
                 current_line = line.strip()
             else:
-                current_line += ' ' + line.strip()
+                current_line += (' ' + line.strip()).strip()
         
         if current_line:
-            outfile.write(current_line + '\n')
+            outfile.write(current_line.strip() + '\n')
 
 
 def preprocess_results(base_path):

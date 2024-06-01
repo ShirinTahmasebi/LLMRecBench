@@ -1,5 +1,5 @@
 from helpers.utils_general import get_absolute_path
-from helpers.utils_evaluation import calculate_metrics, check_filters_and_return_info
+from helpers.utils_evaluation import calculate_metrics, check_filters_and_return_info, preprocess_results
 from helpers.utils_global import *
 import pandas as pd
 import os
@@ -82,7 +82,7 @@ def execute(base_path, filters):
 
 
 if __name__ == '__main__':
-    
+    preprocess_results(get_absolute_path("results"))
     results = execute(
         base_path=get_absolute_path("results_processed"), 
         filters={
