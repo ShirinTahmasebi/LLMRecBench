@@ -55,7 +55,12 @@ def execute(
     ).to(config[KEYWORDS.DEVICE])
 
     trainer = LLMBasedTrainer(config, model, recbole_dataset)
-    _ = trainer.evaluate(test_data, start_num=start_num, end_num=end_num, show_progress=config[KEYWORDS.SHOW_PROGRESS])
+    _ = trainer.inference(
+        test_data, 
+        start_num=start_num,
+        end_num=end_num, 
+        show_progress=config[KEYWORDS.SHOW_PROGRESS]
+    )
 
     log("Done!")
 

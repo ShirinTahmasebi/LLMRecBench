@@ -12,11 +12,11 @@ import torch
 T = TypeVar('T')
 class GenRec(LLMBasedRec[T]):
     
-    def __init__(self, config, dataset, load_from_checkpoint=True, cls: Type[T]= None):
+    def __init__(self, config, dataset, load_from_checkpoint=True, cls: Type[T]= None, load_model=True):
         self.number_of_history_items = config[KEYWORDS.NUMBER_OF_HISTORY_ITEMS]
         self.lora_weights_path = config[KEYWORDS.LORA_WEIGHTS_PATH]
         self.checkpoint_model_name = config[KEYWORDS.CHECKPOINT_MODEL_NAME]
-        super().__init__(config, dataset, load_from_checkpoint, cls)
+        super().__init__(config, dataset, load_from_checkpoint, cls, load_model)
         
     def finetune_llm(self, train_dataset, val_dataset):
         raise NotImplementedError(f"The model text generation method is not defined for {self.__class__.__name__}.")

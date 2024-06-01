@@ -14,14 +14,16 @@ from helpers.utils_global import *
 T = TypeVar('T')
 class LLMBasedRec(ABC, SequentialRecommender, Generic[T]):
     
-    def __init__(self, config, dataset, load_from_checkpoint, cls: Type[T]):
+    def __init__(self, config, dataset, load_from_checkpoint, cls: Type[T], load_model: bool):
         super().__init__(config, dataset)
         self.dataset_type_cls = cls
         self.initialize_variables(config, dataset)
-        self.model, self.tokenizer = self.initialize_model_tokenizer(load_from_checkpoint)
+        if load_model:
+            self.model, self.tokenizer = self.initialize_model_tokenizer(load_from_checkpoint)
+            if self.model:
+                log("Model and tokenizer are loaded!")
+        
         self.fake_fn = torch.nn.Linear(1, 1)
-        if self.model:
-            log("Model and tokenizer are loaded!")
         
     
     @abstractmethod

@@ -1,80 +1,35 @@
-import os
-import re
-import pandas as pd
 from helpers.utils_general import get_absolute_path
-from helpers.utils_global import log
-from decimal import Decimal
+from helpers.utils_evaluation import calculate_metrics, check_filters_and_return_info
+from helpers.utils_global import *
+import pandas as pd
+import os
 
-def calculate_metrics(df):
-    return {
-        "average_number_of_candidate": df["number_of_interactions"].mean(),
-        "hit@5": df['hit@5'].mean() * 100,
-        "ndcg@5": df['ndcg@5'].mean() * 100,
-        "hit@10": df['hit@10'].mean() * 100,
-        "ndcg@10": df['ndcg@10'].mean() * 100,
-        "hallucination_percentage": 0,
-        "repetition_percentage": 0,
-    }
 
-def parse_filename(filename):
-    pattern = r"temp(?P<temp>\w+)_start(?P<start>\d+)_end(?P<end>\d+)\.csv"
-    match = re.match(pattern, filename)
-    if match:
-        return match.group('temp').replace("p", "."), int(match.group('start')), int(match.group('end'))
-    return None, None, None
-
-def parse_directory(directory_name):
-    pattern = r"history(?P<history>\d+)_recoms(?P<recoms>\d+)"
-    match = re.match(pattern, directory_name)
-    if match:
-        return int(match.group('history')), int(match.group('recoms'))
-    return None, None
-
-def check_filters(filters, model_name, dataset_name, recoms, history, temp):
-    if model_name not in filters["model_name"]:
-        return True
-    
-    if dataset_name not in filters["dataset_name"]:
-        return True
-    
-    if int(recoms) not in filters["recoms"]:
-        return True
-    
-    if int(history) not in filters["history"]:
-        return True
-    
-    if float(temp) not in filters["temp"]:
-        return True
-    
-    return False
-    
-def main(base_path, filters):
+def execute(base_path, filters):
     result = {}
+    meta = {}
     
-    for root, dirs, files in os.walk(base_path):
+    for root, _, files in os.walk(base_path):
         for file in files:
+            log(f"File Name: {file}")
             if file.endswith(".csv"):
-                file_path = os.path.join(root, file)
-                parent_dir = os.path.basename(os.path.dirname(file_path))
-                grandparent_dir = os.path.basename(os.path.dirname(os.path.dirname(file_path)))
-                history, recoms = parse_directory(parent_dir)
-                temp, start, end = parse_filename(file)
                 
-                if history is None or recoms is None or temp is None or start is None or end is None:
-                    continue
-                
-                file_name = os.path.basename(file_path)
-                model_name = grandparent_dir.split("_")[0]
-                dataset_name = grandparent_dir.split("_")[1]
-                
-                should_skip = check_filters(filters, model_name, dataset_name, recoms, history, temp)
-                
-                if should_skip:
+                info = check_filters_and_return_info(filters, root, file)
+                if not info:
                     continue
 
+                file_id = info["file_id"]
+                model_name = info["model_name"]
+                dataset_name = info["dataset_name"]
+                recoms = info["recoms"]
+                history = info["history"]
+                temp = info["temp"]
+                start = info["start"]
+                end = info["end"]
+                
+                file_path = os.path.join(root, file)
                 df = pd.read_csv(file_path)
                 metrics = calculate_metrics(df)
-                file_id = f"{grandparent_dir}_{parent_dir}_{file_name}"
                 
                 entry = {
                     "id": file_id,
@@ -90,22 +45,54 @@ def main(base_path, filters):
                 if model_name not in result:
                     result[model_name] = {}
                 if dataset_name not in result[model_name]:
-                    result[model_name][dataset_name] = []
-                
+                    result[model_name][dataset_name] = []  
                 result[model_name][dataset_name].append(entry)
+                
+                meta_key = f"{model_name}_{dataset_name}_history{history}_recoms{recoms}_temp{temp.replace('.', 'p')}"  
+                if meta_key not in meta:
+                    meta[meta_key] = []
+                meta[meta_key].append(entry)
+                
+    meta_stats = {}
+    for key, list_of_dicts in meta.items():
+        total_hit5 = total_ndcg5 = total_hit10 = total_ndcg10 = 0
+        count = len(list_of_dicts)
+        
+        for d in list_of_dicts:
+            total_hit5 += d["hit@5"]
+            total_ndcg5 += d["ndcg@5"]
+            total_hit10 += d["hit@10"]
+            total_ndcg10 += d["ndcg@10"]
+        
+        average_hit5 = total_hit5 / count if count > 0 else 0
+        average_ndcg5 = total_ndcg5 / count if count > 0 else 0
+        average_hit10 = total_hit10 / count if count > 0 else 0
+        average_ndcg10 = total_ndcg10 / count if count > 0 else 0
+        
+        meta_stats[key] = {
+            "average_hit5": average_hit5, 
+            "average_ndcg5": average_ndcg5,
+            "average_hit10": average_hit10, 
+            "average_ndcg10": average_ndcg10,
+        }
+    
+    result["meta_stats"] = meta_stats
     
     return result
 
 
-base_path = get_absolute_path("results")
-result = main(
-    base_path, 
-    filters={
-        "model_name": ["GenRec"],
-        "dataset_name": ["ml-1m"],
-        "recoms": [10],
-        "history": [35, 40, 45],
-        "temp": [0.6, 1],
-    }
-)
-log(result)
+if __name__ == '__main__':
+    
+    results = execute(
+        base_path=get_absolute_path("results_processed"), 
+        filters={
+            "model_name": ["GenRec"],
+            "dataset_name": ["ml-1m"],
+            "recoms": [10],
+            "history": [10, 12, 15, 17, 20, 25, 30, 35, 40, 45, 50],
+            "temp": [.6, 1],
+        }
+    )
+    
+    log(results)
+    log("Done!")

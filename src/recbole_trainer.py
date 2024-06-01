@@ -29,9 +29,8 @@ class LLMBasedTrainer(Trainer):
                 f"candidates{self.number_of_candidates}_" + \
                 f"gt{self.ground_truth_position}_"
             
-                  
       
-    def evaluate(self, eval_data, start_num=0, end_num=-1, show_progress=False):
+    def inference(self, eval_data, start_num=0, end_num=-1, show_progress=False):
         
         output_file_name = f"{self.output_file_name}start{start_num}_end{end_num}"        
         log(f"\n\n --> The output file name is: {output_file_name}\n\n")
@@ -71,7 +70,7 @@ class LLMBasedTrainer(Trainer):
             if not os.path.exists(get_absolute_path(self.output_file_path)):
                 os.makedirs(get_absolute_path(self.output_file_path))
                 
-            df.to_csv(f"{get_absolute_path(self.output_file_path)}/{output_file_name}_1.csv", index=False)
+            df.to_csv(f"{get_absolute_path(self.output_file_path)}/{output_file_name}.csv", index=False)
             counter += batch_size
 
 

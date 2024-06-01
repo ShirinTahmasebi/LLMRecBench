@@ -13,7 +13,7 @@ from recbole.data.interaction import Interaction as RecBoleInteraction
 T = TypeVar('T')
 class LLMRec(LLMBasedRec[T]):
     
-    def __init__(self, config, dataset, load_from_checkpoint=False, cls: Type[T]= None):
+    def __init__(self, config, dataset, load_from_checkpoint=False, cls: Type[T]= None, load_model=True):
         self.number_of_history_items = config[KEYWORDS.NUMBER_OF_HISTORY_ITEMS]
         self.checkpoint_path_parent = config[KEYWORDS.CHECKPOINT_PATH]
         
@@ -29,7 +29,7 @@ class LLMRec(LLMBasedRec[T]):
             KEYWORDS.FINETUNING_TRAIN_ARGS_MAX_SEQ_LEN: config[KEYWORDS.FINETUNING_TRAIN_ARGS_MAX_SEQ_LEN],
         }
         
-        super().__init__(config, dataset, load_from_checkpoint, cls)
+        super().__init__(config, dataset, load_from_checkpoint, cls, load_model)
        
        
     def initialize_model_tokenizer(self, load_from_checkpoint): 
@@ -69,7 +69,7 @@ class LLMRec(LLMBasedRec[T]):
     def get_train_data_hf_hub(self):
         return ALL_API_KEYS["HF_DATASET_REPO_NAME"]
         
-    def count_tokens(self, input: str):
+    def count_tokens(self, inputs_list: str):
         tokens_list = [self.tokenizer(input, return_tensors='pt').input_ids[0] for input in inputs_list]
         len_list = [len(tokens) for tokens in tokens_list]
         return len_list
