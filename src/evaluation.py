@@ -76,23 +76,78 @@ def execute(base_path, filters):
             "average_ndcg10": average_ndcg10,
         }
     
-    result["meta_stats"] = meta_stats
+    result["meta_stats"] = dict(sorted(meta_stats.items()))
     
+    
+    chart_info = {}
+    import re
+    pattern = re.compile(r"GenRec_ml-1m_history(\d+)_recoms10_temp([\d\w]+)")
+
+    for key, value in result["meta_stats"].items():
+        match = pattern.match(key)
+        if match:
+            history = int(match.group(1))
+            temp = f"temp{match.group(2)}"
+            hit5 = value["average_hit5"]
+            ndcg5 = value["average_ndcg5"]
+            hit10 = value["average_hit10"]
+            ndcg10 = value["average_ndcg10"]
+            
+            if temp not in chart_info:
+                chart_info[temp] = {"history": [], "hit@5": [], "ndcg@5": [], "hit@10": [], "ndcg@10": []}
+            
+            chart_info[temp]["history"].append(history)
+            chart_info[temp]["hit@5"].append(hit5)
+            chart_info[temp]["ndcg@5"].append(ndcg5)
+            chart_info[temp]["hit@10"].append(hit10)
+            chart_info[temp]["ndcg@10"].append(ndcg10)
+
+    result["chart_info"] = chart_info
+    
+    print(result)
     return result
 
+def plot_chart(key, value, name_prefix):
+    import matplotlib.pyplot as plt
+
+    history = value["history"]
+    plt.figure(figsize=(10, 6))
+
+    for metric in ["hit@5", "ndcg@5", "hit@10", "ndcg@10"]:
+        plt.plot(history, value[metric], label=metric)
+    
+    plt.xlabel("History")
+    plt.ylabel("Values")
+    plt.title(f"Metrics for {key}")
+    plt.legend()
+    plt.grid(True)
+    
+    plots_path = get_absolute_path("results/plots")
+    if not os.path.exists(plots_path):
+        os.makedirs(plots_path)
+    filename = os.path.join(plots_path, f"{name_prefix} - {key}.png")
+    plt.savefig(filename)
+    plt.close()
+    
 
 if __name__ == '__main__':
+    model_name = "GenRec"
+    dataset_name = "ml-1m"
     preprocess_results(get_absolute_path("results"))
     results = execute(
         base_path=get_absolute_path("results_processed"), 
         filters={
-            "model_name": ["GenRec"],
-            "dataset_name": ["ml-1m"],
+            "model_name": [model_name],
+            "dataset_name": [dataset_name],
             "recoms": [10],
             "history": [10, 12, 15, 17, 20, 25, 30, 35, 40, 45, 50],
-            "temp": [.6, 1],
+            "temp": [0.6, 1],
         }
     )
     
-    log(results)
+    log(dict(sorted(results.items())))
+    
+    chart_info = results["chart_info"]
+    for temperature_key, value in chart_info.items():
+        plot_chart(temperature_key, value, name_prefix=f"Chart - {model_name} - {dataset_name}")
     log("Done!")
