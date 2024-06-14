@@ -1,17 +1,16 @@
 from datasets import Dataset
 from prompts.prompts_genrec import *
+from model.llama_mixin import LLaMaMixin
 from model.llm_based_rec import LLMBasedRec
 from data.dataset import DatasetMovieLens, DatasetAmazon
 from helpers.utils_llm import import_hf_model_and_tokenizer
 from helpers.utils_general import get_absolute_path, SaveCheckpointCallback
 from helpers.utils_global import *
 from typing import TypeVar, Type
-from recbole.data.interaction import Interaction as RecBoleInteraction
-
 
 
 T = TypeVar('T')
-class LLMRec(LLMBasedRec[T]):
+class LLMRec(LLaMaMixin, LLMBasedRec[T]):
     
     def __init__(self, config, dataset, load_from_checkpoint=False, cls: Type[T]= None, load_model=True):
         self.number_of_history_items = config[KEYWORDS.NUMBER_OF_HISTORY_ITEMS]
@@ -51,12 +50,6 @@ class LLMRec(LLMBasedRec[T]):
         return model, tokenizer
     
     
-    def create_prompt(self):
-        raise NotImplementedError(f"The prompt creation method is not implemented for {self.__class__.__name__}.")
-    
-    def format_input(self, interaction: RecBoleInteraction):
-        raise NotImplementedError(f"The input formatting metod is not defined for {self.__class__.__name__}.")
-        
     def inference_llm(self, model_input_txt_batch: list):
         raise NotImplementedError(f"The model text generation method is not defined for {self.__class__.__name__}.")
          
@@ -101,6 +94,8 @@ class LLMRec(LLMBasedRec[T]):
             ---------------------
             """)
         
+        temp = str(self.model_config.temperature).replace(".", "p")
+        self.checkpoint_path = self.checkpoint_path + f"/candidate{self.number_of_history_items}_temp{temp}"
         output_dir = get_absolute_path(self.checkpoint_path)
 
         peft_config = LoraConfig(

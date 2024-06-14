@@ -31,11 +31,11 @@ class LLMBasedRec(ABC, SequentialRecommender, Generic[T]):
         raise NotImplementedError(f"The model initialization method is not implemented for {self.__class__.__name__}.")
     
     @abstractmethod
-    def create_prompt(self):
+    def create_prompt(self, input):
         raise NotImplementedError(f"The prompt creation method is not implemented for {self.__class__.__name__}.")
     
     @abstractmethod
-    def format_input(self, interaction: RecBoleInteraction):
+    def format_input(self, user_history_batch: List[UserInteractionHistory]):
         raise NotImplementedError(f"The input formatting metod is not defined for {self.__class__.__name__}.")
         
     @abstractmethod

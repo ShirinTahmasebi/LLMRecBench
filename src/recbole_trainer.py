@@ -119,13 +119,13 @@ class LLMBasedTrainer(Trainer):
         try:
             from datasets import load_dataset
             dataset = load_dataset(self.model.get_train_data_hf_hub(), use_auth_token=True)
+            dataset = dataset['train']
         except Exception as _:
             dataset = self.load_or_create_train_dataset(train_data)
         
-        # TODO: If the dataset structure changes, then I need to change this part as well. 
-        total_size = len(dataset['train'])
+        total_size = len(dataset)
         train_index = int(total_size * .9)
-        train_dataset = dataset['train'].select(range(0, train_index))
-        val_dataset = dataset['train'].select(range(train_index, total_size))
+        train_dataset = dataset.select(range(0, train_index))
+        val_dataset = dataset.select(range(train_index, total_size))
         
         self.model.finetune_llm(train_dataset, val_dataset)

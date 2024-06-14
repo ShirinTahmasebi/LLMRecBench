@@ -1,16 +1,16 @@
 from typing import List, TypeVar, Type
 from transformers import GenerationConfig
 from prompts.prompts_genrec import *
+from model.llama_mixin import LLaMaMixin
 from model.llm_based_rec import LLMBasedRec
-from data.user_interaction import UserInteractionHistory
 from data.dataset import DatasetMovieLens, DatasetAmazon
 from helpers.utils_llm import import_hf_model_and_tokenizer, import_genrec_model_and_tokenizer
-from helpers.utils_general import last_non_zero_index, get_absolute_path
+from helpers.utils_general import get_absolute_path
 from helpers.utils_global import *
 import torch
 
 T = TypeVar('T')
-class GenRec(LLMBasedRec[T]):
+class GenRec(LLaMaMixin, LLMBasedRec[T]):
     
     def __init__(self, config, dataset, load_from_checkpoint=True, cls: Type[T]= None, load_model=True):
         self.number_of_history_items = config[KEYWORDS.NUMBER_OF_HISTORY_ITEMS]
@@ -52,48 +52,6 @@ class GenRec(LLMBasedRec[T]):
         tokens_list = [self.tokenizer(input, return_tensors='pt').input_ids[0] for input in inputs_list]
         len_list = [len(tokens) for tokens in tokens_list]
         return len_list
-    
-    def create_prompt(self, input):
-        if self.dataset_type_cls is DatasetMovieLens:
-            instruction = MOVIE_INSTRUCTION
-        if self.dataset_type_cls is DatasetAmazon:
-            instruction = TOYS_INSTRUCTION
-        
-        formatted_interactions = INTERACTIONS.format(input=input)
-        return f"""{instruction}
-
-{formatted_interactions}
-    
-{OUTPUT}"""
-
-
-    def format_input(self, user_history_batch: List[UserInteractionHistory]):
-        interactions_prompt_txt_batch = []
-        interactions_txt_batch = []
-        interactions_injected_count_batch = []
-        
-        for history_per_user in user_history_batch:
-            data_item_cls = self.dataset.get_data_item_type()
-            his_items_count = last_non_zero_index(data_item_cls.get_item_ids(history_per_user.interaction_items)) + 1
-            if self.number_of_history_items > his_items_count:
-                start_index = 0
-                end_index = his_items_count
-            else:
-                start_index = his_items_count - self.number_of_history_items
-                end_index = his_items_count 
-            output_interaction = data_item_cls.get_interactions_text(
-                history_per_user.interaction_items,
-                start_index,
-                end_index
-            )
-            
-            final_prompt, valid_interactions_txt, injected_interactions_count = self.append_interations_safe_context_window(output_interaction)
-            interactions_prompt_txt_batch.append(final_prompt)
-            interactions_txt_batch.append(valid_interactions_txt)
-            interactions_injected_count_batch.append(injected_interactions_count)
-                
-        return interactions_prompt_txt_batch, interactions_txt_batch, interactions_injected_count_batch
-
         
     def inference_llm(self, model_input_txt_batch: list):
         all_results = []
